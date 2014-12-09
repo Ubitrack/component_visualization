@@ -116,17 +116,17 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 		if ( m_background[num]->origin ) {
 			glRasterPos2i( 0, 0 );
 			glPixelZoom(
-				((float)m_width /(float)m_background[num]->width )*1.0000001f,
-				((float)m_height/(float)m_background[num]->height)*1.0000001f
+				((float)m_width /(float)m_background[num]->width() )*1.0000001f,
+				((float)m_height/(float)m_background[num]->height())*1.0000001f
 			);
 		} else {
 			glRasterPos2i( 0, m_height-1 );
 			glPixelZoom(
-				 ((float)m_width /(float)m_background[num]->width )*1.0000001f,
-				-((float)m_height/(float)m_background[num]->height)*1.0000001f
+				 ((float)m_width /(float)m_background[num]->width())*1.0000001f,
+				-((float)m_height/(float)m_background[num]->height())*1.0000001f
 			);
 		}
-		glDrawPixels( m_background[num]->width, m_background[num]->height, imgFormat, GL_UNSIGNED_BYTE, m_background[num]->imageData );
+		glDrawPixels( m_background[num]->width(), m_background[num]->height(), imgFormat, GL_UNSIGNED_BYTE, m_background[num]->imageData );
 	}
 	else
 	{
@@ -139,11 +139,11 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			
 			// generate power-of-two sizes
 			m_pow2Width = 1;
-			while ( m_pow2Width < (unsigned)m_background[ num ]->width )
+			while ( m_pow2Width < (unsigned)m_background[ num ]->width() )
 				m_pow2Width <<= 1;
 				
 			m_pow2Height = 1;
-			while ( m_pow2Height < (unsigned)m_background[ num ]->height )
+			while ( m_pow2Height < (unsigned)m_background[ num ]->height() )
 				m_pow2Height <<= 1;
 			
 			// create new empty texture
@@ -162,14 +162,14 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 		
 		// load image into texture
 		glBindTexture( GL_TEXTURE_2D, m_texture );
-		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, m_background[ num ]->width, m_background[ num ]->height, 
+		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, m_background[ num ]->width(), m_background[ num ]->height(), 
 			imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->imageData );
 		
 		// display textured rectangle
 		double y0 = m_background[ num ]->origin ? 0 : m_height;
 		double y1 = m_height - y0;
-		double tx = double( m_background[ num ]->width ) / m_pow2Width;
-		double ty = double( m_background[ num ]->height ) / m_pow2Height;
+		double tx = double( m_background[ num ]->width() ) / m_pow2Width;
+		double ty = double( m_background[ num ]->height() ) / m_pow2Height;
 
 		// draw two triangles
 		glBegin( GL_TRIANGLE_STRIP );
@@ -205,10 +205,10 @@ void BackgroundImage::imageIn( const Ubitrack::Measurement::ImageMeasurement& im
 	LOG4CPP_DEBUG( logger, "received background image with timestamp " << img.time() );
 	boost::mutex::scoped_lock l( m_imageLock[num] );		
 	if(img->depth == IPL_DEPTH_32F){		
-		boost::shared_ptr<Ubitrack::Vision::Image> p(new Ubitrack::Vision::Image(img->width , img->height , 1, IPL_DEPTH_8U ));
+		boost::shared_ptr<Ubitrack::Vision::Image> p(new Ubitrack::Vision::Image(img->width(), img->height(), 1, IPL_DEPTH_8U ));
 		float* depthData = (float*) img->imageData;
 		unsigned char* up =(unsigned char*) p->imageData;
-		for(unsigned int i=0;i<img->width*img->height;i++)
+		for(unsigned int i=0;i<img->width()*img->height();i++)
 			if(depthData[i] != depthData[i])
 				up[i] = 0;
 			else 
