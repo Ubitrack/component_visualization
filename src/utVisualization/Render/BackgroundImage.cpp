@@ -204,7 +204,7 @@ void BackgroundImage::imageIn( const Ubitrack::Measurement::ImageMeasurement& im
 {
 	LOG4CPP_DEBUG( logger, "received background image with timestamp " << img.time() );
 	boost::mutex::scoped_lock l( m_imageLock[num] );		
-	if(img->depth == IPL_DEPTH_32F){		
+	if(img->depth() == IPL_DEPTH_32F){		
 		boost::shared_ptr<Ubitrack::Vision::Image> p(new Ubitrack::Vision::Image(img->width(), img->height(), 1, IPL_DEPTH_8U ));
 		float* depthData = (float*) img->imageData;
 		unsigned char* up =(unsigned char*) p->imageData;
