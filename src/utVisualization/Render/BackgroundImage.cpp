@@ -113,7 +113,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 		// glDrawPixels version
 		glDisable( GL_TEXTURE_2D );
 
-		if ( m_background[num]->origin ) {
+		if ( m_background[num]->origin() ) {
 			glRasterPos2i( 0, 0 );
 			glPixelZoom(
 				((float)m_width /(float)m_background[num]->width() )*1.0000001f,
@@ -166,7 +166,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->imageData );
 		
 		// display textured rectangle
-		double y0 = m_background[ num ]->origin ? 0 : m_height;
+		double y0 = m_background[ num ]->origin() ? 0 : m_height;
 		double y1 = m_height - y0;
 		double tx = double( m_background[ num ]->width() ) / m_pow2Width;
 		double ty = double( m_background[ num ]->height() ) / m_pow2Height;

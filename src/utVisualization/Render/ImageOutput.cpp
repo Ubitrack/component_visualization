@@ -51,7 +51,7 @@ void ImageOutput::draw( Measurement::Timestamp&, int parity )
 
 	data = (unsigned char*)m_image->imageData;
 	glReadPixels( 0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, data ); 
-	m_image->origin = 1;
+	m_image->iplImage()->origin = 1;
 
 	m_port.send( Measurement::ImageMeasurement( Measurement::now(), m_image ) );
 }
