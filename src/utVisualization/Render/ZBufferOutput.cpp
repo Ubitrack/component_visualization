@@ -42,13 +42,13 @@ void ZBufferOutput::draw( Measurement::Timestamp&, int parity )
 	{
 		m_width  = m_pModule->m_width;
 		m_height = m_pModule->m_height;
-		if ((m_zBuffer) && (m_zBuffer->imageData)) delete (unsigned char*)(m_zBuffer->imageData);
+		if ((m_zBuffer) && (m_zBuffer->iplImage()->imageData)) delete (unsigned char*)(m_zBuffer->iplImage()->imageData);
 		data = new unsigned char[m_width*m_height];
 		m_zBuffer = boost::shared_ptr< Vision::Image >( new Vision::Image( m_width, m_height, 1, data, IPL_DEPTH_8U ) );
 	}
 
 	m_zBuffer->iplImage()->origin = 1;
-	data = (unsigned char*)m_zBuffer->imageData;
+	data = (unsigned char*)m_zBuffer->iplImage()->imageData;
 	glReadPixels(0, 0, m_width, m_height, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, data ); 
 
 	/*for(int a = 0; a < m_width*m_height; a++)

@@ -94,13 +94,13 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	
 	// find out texture format
 	GLenum imgFormat = GL_LUMINANCE;
-	switch ( m_background[num]->nChannels ) {
+	switch ( m_background[num]->channels() ) {
 		case 1: imgFormat = GL_LUMINANCE; break;
 #ifndef GL_BGR_EXT
 		case 3: imgFormat = GL_RGB; break;
 #else
 		case 3: 
-			if ( m_background[ num ]->channelSeq[ 0 ] == 'B' && m_background[ num ]->channelSeq[ 1 ] == 'G' && m_background[ num ]->channelSeq[ 2 ] == 'R' )
+			if ( m_background[ num ]->iplImage()->channelSeq[ 0 ] == 'B' && m_background[ num ]->iplImage()->channelSeq[ 1 ] == 'G' && m_background[ num ]->iplImage()->channelSeq[ 2 ] == 'R' )
 				imgFormat = GL_BGR_EXT;
 			else
 				imgFormat = GL_RGB;
@@ -126,7 +126,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 				-((float)m_height/(float)m_background[num]->height())*1.0000001f
 			);
 		}
-		glDrawPixels( m_background[num]->width(), m_background[num]->height(), imgFormat, GL_UNSIGNED_BYTE, m_background[num]->imageData );
+		glDrawPixels( m_background[num]->width(), m_background[num]->height(), imgFormat, GL_UNSIGNED_BYTE, m_background[num]->iplImage()->imageData );
 	}
 	else
 	{
@@ -163,7 +163,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 		// load image into texture
 		glBindTexture( GL_TEXTURE_2D, m_texture );
 		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, m_background[ num ]->width(), m_background[ num ]->height(), 
-			imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->imageData );
+			imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->iplImage()->imageData );
 		
 		// display textured rectangle
 		double y0 = m_background[ num ]->origin() ? 0 : m_height;
@@ -206,8 +206,8 @@ void BackgroundImage::imageIn( const Ubitrack::Measurement::ImageMeasurement& im
 	boost::mutex::scoped_lock l( m_imageLock[num] );		
 	if(img->depth() == IPL_DEPTH_32F){		
 		boost::shared_ptr<Ubitrack::Vision::Image> p(new Ubitrack::Vision::Image(img->width(), img->height(), 1, IPL_DEPTH_8U ));
-		float* depthData = (float*) img->imageData;
-		unsigned char* up =(unsigned char*) p->imageData;
+		float* depthData = (float*) img->iplImage()->imageData;
+		unsigned char* up =(unsigned char*) p->iplImage()->imageData;
 		for(unsigned int i=0;i<img->width()*img->height();i++)
 			if(depthData[i] != depthData[i])
 				up[i] = 0;
