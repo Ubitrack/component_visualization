@@ -24,8 +24,11 @@
 #ifndef _BACKGROUNDIMAGE_H_
 #define _BACKGROUNDIMAGE_H_
 
+#include <utUtil/CleanWindows.h>
+
 #include "RenderModule.h"
 #include <utVision/Image.h>
+#include <CL/cl.h>
 
 namespace Ubitrack { namespace Drivers {
 
@@ -77,6 +80,11 @@ protected:
 	bool m_bUseTexture;
 	bool m_bTextureInitialized;
 	GLuint m_texture;
+
+	//OpenCL
+	cl_mem m_clImage;
+	boost::shared_ptr<cv::UMat> m_convertedImage;
+
 	unsigned m_pow2Width;
 	unsigned m_pow2Height;
 

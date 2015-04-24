@@ -40,7 +40,7 @@ if not (have_utdataflow and have_utvision and have_freeglut):
 headers = globSourceFiles( '*.h' )
 sources = globSourceFiles( '*.cpp' )
 
-renderer_options = mergeOptions( utdataflow_all_options, utvision_all_options, glut_options ) 
+renderer_options = mergeOptions( utdataflow_all_options, utvision_all_options, glut_options, cuda_options ) 
 env = masterEnv.Clone()
 env.AppendUnique(**renderer_options)
 

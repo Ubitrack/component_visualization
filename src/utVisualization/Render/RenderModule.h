@@ -106,7 +106,8 @@
 
 #include "VideoSync.h"
 
-
+//opencl context
+#include <CL/cl.h>
 
 using namespace Ubitrack::Dataflow;
 
@@ -293,6 +294,10 @@ public:
 	void setStereoRenderPasses( StereoRenderPasses srp )
 	{ m_stereoRenderPasses = srp; }
 
+
+	cl_context m_clContext;
+	cl_command_queue m_clCommandQueue;
+
 protected:
 
 	int m_winHandle, m_redraw, m_doSync, m_parity, m_info, m_lasttime, m_lastframe;
@@ -305,6 +310,9 @@ protected:
 	
 	StereoRenderPasses m_stereoRenderPasses;
 
+private:
+
+	void initCL();
 };
 
 
