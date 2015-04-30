@@ -28,6 +28,7 @@
 #endif
 
 #include "GL/freeglut.h"
+#include <utVision/OpenCLManager.h>
 
 #include "RenderModule.h"
 
@@ -341,7 +342,8 @@ int VirtualCamera::setup()
 	glutDisplayFunc ( g_display  );
 	glutReshapeFunc ( g_reshape  );
 
-	initCL();
+	
+	Ubitrack::Vision::OpenCLManager& oclManager = Ubitrack::Vision::OpenCLManager::singleton();
 
 	ComponentList objects = getAllComponents();
 	for ( ComponentList::iterator i = objects.begin(); i != objects.end(); i++ )
@@ -350,69 +352,6 @@ int VirtualCamera::setup()
     }
      
 	return 1;
-}
-
-void VirtualCamera::initCL()
-{
-	
-	//Get all Platforms and select a GPU one
-	cl_uint numPlatforms;
-	clGetPlatformIDs (65536, NULL, &numPlatforms); 
-	LOG4CPP_INFO( logger, "Platforms detected: " << numPlatforms );
- 
-	cl_platform_id* platformIDs;
-	platformIDs = new cl_platform_id[numPlatforms];
- 
-	cl_int err = clGetPlatformIDs(numPlatforms, platformIDs, NULL);
-	if(err != CL_SUCCESS)
-	{
-		LOG4CPP_INFO( logger, "error at clGetPlatformIDs :" << err );
-	}
-		
-	cl_uint selectedPlatform =0;  // simply take first platform(index 0), code for taking correct one is long and not postet here
- 
-	cl_platform_id selectedPlatformID = platformIDs[selectedPlatform];
-	delete[] platformIDs; 	
- 
-	cl_device_id selectedDeviceID; 
-	//Select a GPU device
-	err = clGetDeviceIDs(selectedPlatformID, CL_DEVICE_TYPE_GPU, 1, &selectedDeviceID, NULL);
-	if(err != CL_SUCCESS)
-	{
-		LOG4CPP_INFO( logger, "error at clGetDeviceIDs :" << err );
-	}
-
-	char cDeviceNameBuffer[1024];
-	clGetDeviceInfo (selectedDeviceID, CL_DEVICE_NAME, sizeof(char) *  1024, cDeviceNameBuffer, NULL);
-	LOG4CPP_INFO( logger, ": Device Name: "		<< cDeviceNameBuffer );
-
-	
-	//Get a context with OpenGL connection
-	cl_context_properties props[] = { 
-		CL_GL_CONTEXT_KHR, 
-		(cl_context_properties)wglGetCurrentContext(), 
-		CL_WGL_HDC_KHR, 
-		(cl_context_properties) wglGetCurrentDC(), 
-		CL_CONTEXT_PLATFORM, 
-		(cl_context_properties) selectedPlatformID, 
-		0};
- 
-	cl_int status = 0;
-
-	m_clContext = clCreateContext(props,1, &selectedDeviceID, NULL, NULL, &err);
-	if(!m_clContext || err!= CL_SUCCESS)
-	{
-		LOG4CPP_INFO( logger,  "error at clCreateContext :" << err );
-	}
-	
-	m_clCommandQueue = clCreateCommandQueue(m_clContext, selectedDeviceID, 0,&err);
-	if(!m_clCommandQueue || err!= CL_SUCCESS)
-	{
-		LOG4CPP_INFO( logger, "error at clCreateCommandQueue :" << err );
-	}
-	
-	cv::ocl::Context& oclContext = cv::ocl::Context::getDefault(false);
-	oclContext.initContextFromHandle(selectedPlatformID, m_clContext, selectedDeviceID);	
 }
 
 void VirtualCamera::invalidate( VirtualObject* caller )

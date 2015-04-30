@@ -30,6 +30,11 @@
 #include <utVision/Image.h>
 #include <CL/cl.h>
 
+#define DO_TIMING
+
+#ifdef DO_TIMING
+#include <utUtil/BlockTimer.h>
+#endif
 namespace Ubitrack { namespace Drivers {
 
 
@@ -90,6 +95,11 @@ protected:
 
 	Ubitrack::Dataflow::PushConsumer< Ubitrack::Measurement::ImageMeasurement > m_image0;
 	Ubitrack::Dataflow::PushConsumer< Ubitrack::Measurement::ImageMeasurement > m_image1;
+
+	#ifdef DO_TIMING
+	int m_counter;
+	Ubitrack::Util::BlockTimer m_textureUpdateTimer;
+	#endif
 
 };
 
