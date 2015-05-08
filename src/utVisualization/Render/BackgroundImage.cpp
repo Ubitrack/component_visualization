@@ -104,8 +104,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	
 	// lock it to avoid random crashes
 	boost::mutex::scoped_lock l( m_imageLock[num] );
-
-	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
+	
 	// find out texture format
 	GLenum imgFormat = GL_LUMINANCE;
 	int numOfChannels = 4;
@@ -129,6 +128,8 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			imgFormat = GL_RGBA;
 			break;
 	}
+
+	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
 	
 	if ( !m_bUseTexture )
 	{
@@ -155,6 +156,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 		glEnable(GL_TEXTURE_2D);
 		if ( !m_bTextureInitialized )
 		{
+			oclManager.initialize();
 			m_bTextureInitialized = true;
 			
 			// generate power-of-two sizes
@@ -196,7 +198,6 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 				m_convertedImage.reset(new cv::UMat(m_background[ num ]->uMat().size(), CV_8UC1));
 			}
 		}
-
 #ifdef DO_TIMING
 		{
 			UBITRACK_TIME( m_textureUpdateTimer );
