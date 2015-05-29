@@ -156,7 +156,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 		glEnable(GL_TEXTURE_2D);
 		if ( !m_bTextureInitialized )
 		{
-			oclManager.initialize();
+			oclManager.initializeOpenGL();
 			m_bTextureInitialized = true;
 			
 			// generate power-of-two sizes
