@@ -78,6 +78,9 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	// scene.  We have to restore this state below.
 	glDisable( GL_BLEND );
 
+	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
+	oclManager.initializeOpenGL();
+
 	// use image in stereo mode only if correct eye
 	if ( ( m_stereoEye == stereoEyeRight && num ) || ( m_stereoEye == stereoEyeLeft && !num ) )
 		return;
@@ -129,7 +132,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			break;
 	}
 
-	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
+	
 	
 	if ( !m_bUseTexture )
 	{
@@ -156,7 +159,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 		glEnable(GL_TEXTURE_2D);
 		if ( !m_bTextureInitialized )
 		{
-			oclManager.initializeOpenGL();
+			
 			m_bTextureInitialized = true;
 			
 			// generate power-of-two sizes
