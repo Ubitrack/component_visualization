@@ -28,6 +28,7 @@
 #include <CL/cl_gl.h>
 #include <GL/glut.h>
 
+#include <opencv/highgui.h>
 
 namespace Ubitrack { namespace Drivers {
 
@@ -77,9 +78,15 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	// module might have enabled global transparency for the virtual
 	// scene.  We have to restore this state below.
 	glDisable( GL_BLEND );
-
 	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
-	oclManager.initializeOpenGL();
+	static bool isInitialized = false;
+	if (!isInitialized)
+	{
+		oclManager.initializeOpenGL();
+		isInitialized = true;
+		return;
+	}
+	
 
 	// use image in stereo mode only if correct eye
 	if ( ( m_stereoEye == stereoEyeRight && num ) || ( m_stereoEye == stereoEyeLeft && !num ) )
@@ -458,6 +465,14 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
  */
 void BackgroundImage::imageIn( const Ubitrack::Measurement::ImageMeasurement& img, int num )
 {
+	//cv::imshow("umatImage", img->uMat());
+	//cv::waitKey(10);
+	//img->uMat();
+	//img->iplImage();
+	////cvShowImage("image", img->iplImage());
+	//cv::waitKey(10);
+	//cvWaitKey(4);
+	
 	LOG4CPP_DEBUG( logger, "received background image with timestamp " << img.time() );
 	boost::mutex::scoped_lock l( m_imageLock[num] );		
 	if(img->depth() == IPL_DEPTH_32F){		
@@ -475,6 +490,11 @@ void BackgroundImage::imageIn( const Ubitrack::Measurement::ImageMeasurement& im
 	} else {
 		m_background[num] = img;
 	}
+	//cv::imshow("stored background", m_background[num]->uMat());
+	//cv::waitKey(4);
+
+	//cvShowImage("stored background3", m_background[num]->iplImage());
+	//cvWaitKey(4);
 	m_pModule->invalidate( this );
 }
 

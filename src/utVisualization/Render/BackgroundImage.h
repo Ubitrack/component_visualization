@@ -30,7 +30,7 @@
 #include <utVision/Image.h>
 #include <CL/cl.h>
 
-#define DO_TIMING
+//#define DO_TIMING
 
 #ifdef DO_TIMING
 #include <utUtil/BlockTimer.h>
