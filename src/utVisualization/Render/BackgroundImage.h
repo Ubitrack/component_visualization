@@ -24,11 +24,17 @@
 #ifndef _BACKGROUNDIMAGE_H_
 #define _BACKGROUNDIMAGE_H_
 
+#ifdef WIN32
 #include <utUtil/CleanWindows.h>
+ #endif
 
 #include "RenderModule.h"
 #include <utVision/Image.h>
-#include <CL/cl.h>
+#ifdef __APPLE__
+    #include "OpenCL/opencl.h"
+#else
+    #include "CL/cl.h"
+#endif
 
 //#define DO_TIMING
 

@@ -25,7 +25,13 @@
 #include <utVision/OpenCLManager.h>
 
 #include <opencv2/core/ocl.hpp>
-#include <CL/cl_gl.h>
+
+#ifdef __APPLE__
+    #include "OpenCL/cl_gl.h"
+#else
+    #include "CL/cl_gl.h"
+#endif
+
 #include <GL/glut.h>
 
 #include <opencv/highgui.h>
@@ -235,7 +241,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
 		size_t offset = 0; 
 		size_t dst_origin[3] = {0, 0, 0};
-		size_t region[3] = {m_convertedImage->size().width, m_convertedImage->size().height, 1};
+		size_t region[3] = {static_cast<size_t>(m_convertedImage->size().width), static_cast<size_t>(m_convertedImage->size().height), 1};
 
 		err = clEnqueueCopyBufferToImage(commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
 		if(err != CL_SUCCESS)

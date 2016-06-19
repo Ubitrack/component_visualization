@@ -78,7 +78,11 @@ log4cpp::Category& loggerEvents( log4cpp::Category::getInstance( "Ubitrack.Event
 
 //OCL
 #include <opencv2/core/ocl.hpp>
-#include <CL/cl_gl.h>
+#ifdef __APPLE__
+    #include "OpenCL/cl_gl.h"
+#else
+    #include "CL/cl_gl.h"
+#endif
 #include <GL/glut.h>
 
 namespace Ubitrack { namespace Drivers {
