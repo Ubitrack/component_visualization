@@ -19,4 +19,4 @@ ut_component_include_directories(${UBITRACK_CORE_DEPS_INCLUDE_DIR} ${OPENCV_INCL
 #	headers.remove('PoseErrorVisualization.h')
 
 ut_glob_component_sources(HEADERS "*.h" SOURCES "*.cpp")
-ut_create_single_component(${OPENGL_LIBRARIES} ${OpenCL_LIBRARIES} ${Freeglut_LIBRARIES})
+ut_create_single_component(${OPENGL_LIBRARIES} ${OpenCL_LIBRARY} ${Freeglut_LIBRARIES})
