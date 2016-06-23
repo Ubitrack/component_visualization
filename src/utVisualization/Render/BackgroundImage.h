@@ -30,10 +30,12 @@
 
 #include "RenderModule.h"
 #include <utVision/Image.h>
+#ifdef HAVE_OPENCL
 #ifdef __APPLE__
     #include "OpenCL/opencl.h"
 #else
     #include "CL/cl.h"
+#endif
 #endif
 
 //#define DO_TIMING
@@ -92,9 +94,11 @@ protected:
 	bool m_bTextureInitialized;
 	GLuint m_texture;
 
+#ifdef HAVE_OPENCL
 	//OpenCL
 	cl_mem m_clImage;
 	boost::shared_ptr<cv::UMat> m_convertedImage;
+#endif
 
 	unsigned m_pow2Width;
 	unsigned m_pow2Height;

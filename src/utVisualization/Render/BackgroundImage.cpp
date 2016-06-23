@@ -24,17 +24,16 @@
 #include "BackgroundImage.h"
 #include <utVision/OpenCLManager.h>
 
+#ifdef HAVE_OPENCL
 #include <opencv2/core/ocl.hpp>
-
 #ifdef __APPLE__
     #include "OpenCL/cl_gl.h"
 #else
     #include "CL/cl_gl.h"
 #endif
+#endif
 
 #include <GL/glut.h>
-
-#include <opencv/highgui.h>
 
 namespace Ubitrack { namespace Drivers {
 
@@ -56,7 +55,6 @@ BackgroundImage::BackgroundImage( const std::string& name, boost::shared_ptr< Gr
 	}
 }
 
-
 BackgroundImage::~BackgroundImage()
 {
 }
@@ -73,22 +71,27 @@ void BackgroundImage::glCleanup()
  		glDeleteTextures( 1, &m_texture );
  	}
 }
-#define USE_OPENCL
-
-#ifdef USE_OPENCL
 
 /** render the object */
 void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 {
+    if (!getModule().isSetupComplete()) {
+        return;
+    }
+
 	// Disable transparency for background image. The Transparency
 	// module might have enabled global transparency for the virtual
 	// scene.  We have to restore this state below.
 	glDisable( GL_BLEND );
+
+    // access OCL Manager and initialize if needed
 	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
 	static bool isInitialized = false;
 	if (!isInitialized)
 	{
-		oclManager.initializeOpenGL();
+        if (oclManager.isEnabled()) {
+            oclManager.initializeOpenGL();
+        }
 		isInitialized = true;
 		return;
 	}
@@ -120,6 +123,9 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	
 	// lock it to avoid random crashes
 	boost::mutex::scoped_lock l( m_imageLock[num] );
+
+    // if OpenCL is enabled and image is on GPU, then use OCL codepath
+    bool image_isOnGPU = oclManager.isEnabled() & m_background[num]->isOnGPU();
 	
 	// find out texture format
 	GLenum imgFormat = GL_LUMINANCE;
@@ -132,12 +138,12 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 #ifndef GL_BGR_EXT
 		case 3: imgFormat = GL_RGB; break;
 #else
-		case 3: 
-			//if ( m_background[ num ]->iplImage()->channelSeq[ 0 ] == 'B' && m_background[ num ]->iplImage()->channelSeq[ 1 ] == 'G' && m_background[ num ]->iplImage()->channelSeq[ 2 ] == 'R' )
-			//	imgFormat = GL_BGRA_EXT;
-			//else
-			//	imgFormat = GL_RGBA;
-			imgFormat = GL_RGBA;
+		case 3:
+            numOfChannels = 3;
+			if ( m_background[ num ]->iplImage()->channelSeq[ 0 ] == 'B' && m_background[ num ]->iplImage()->channelSeq[ 1 ] == 'G' && m_background[ num ]->iplImage()->channelSeq[ 2 ] == 'R' )
+				imgFormat = GL_BGR_EXT;
+			else
+				imgFormat = GL_RGB;
 			break;
 #endif
 		default:
@@ -145,8 +151,6 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			break;
 	}
 
-	
-	
 	if ( !m_bUseTexture )
 	{
 		// glDrawPixels version
@@ -197,79 +201,111 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			LOG4CPP_DEBUG( logger, "glTexImage2D( width=" << m_pow2Width << ", height=" << m_pow2Height << " ): " << glGetError() );
 		
 			LOG4CPP_INFO( logger, "initalized texture" );
-			
-			//Get an image Object from the OpenGL texture
-			cl_int err;			
-			m_clImage = clCreateFromGLTexture2D( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, m_texture, &err);
-			if(err != CL_SUCCESS)
-			{
-				LOG4CPP_INFO( logger, "error at  clCreateFromGLTexture2D:" << err );
-			}
-			//we need to have an RGBA or monochrome image
-			if (m_background[num]->channels() == 3 || m_background[num]->channels() == 4) 
-			{
-				m_convertedImage.reset(new cv::UMat(m_background[ num ]->uMat().size(), CV_8UC4));
-			}else if (m_background[num]->channels() == 1 ) 
-			{
-				m_convertedImage.reset(new cv::UMat(m_background[ num ]->uMat().size(), CV_8UC1));
-			}
+
+
+            if (image_isOnGPU) {
+#ifdef HAVE_OPENCL
+                //Get an image Object from the OpenGL texture
+                cl_int err;
+                m_clImage = clCreateFromGLTexture2D( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, m_texture, &err);
+                if (err != CL_SUCCESS)
+                {
+                    LOG4CPP_ERROR( logger, "error at  clCreateFromGLTexture2D:" << err );
+                }
+                //we need to have an RGBA or monochrome image
+                if (m_background[num]->channels() == 3 || m_background[num]->channels() == 4)
+                {
+                    m_convertedImage.reset(new cv::UMat(m_background[ num ]->uMat().size(), CV_8UC4));
+                } else if (m_background[num]->channels() == 1 )
+                {
+                    m_convertedImage.reset(new cv::UMat(m_background[ num ]->uMat().size(), CV_8UC1));
+                }
+#endif
+            }
+
+
 		}
 #ifdef DO_TIMING
 		{
 			UBITRACK_TIME( m_textureUpdateTimer );
-#endif	
-		//we need to have an RGBA or monochrome image
-		if (m_background[num]->channels() == 3)
-		{
-			cv::cvtColor(m_background[num]->uMat(), *m_convertedImage, cv::COLOR_BGR2RGBA);
-			
-		}else
-		{
-			*m_convertedImage = m_background[num]->uMat();
-		}
+#endif
 
-		cl_mem clBuffer = (cl_mem) m_convertedImage->handle(cv::ACCESS_READ);
-	
-		cl_command_queue commandQueue = oclManager.getCommandQueue();
+        if (image_isOnGPU) {
+#ifdef HAVE_OPENCL
 
-		cl_int err;
-		err = clEnqueueAcquireGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
-		if(err != CL_SUCCESS)
-		{
-			LOG4CPP_INFO( logger, "error at  clEnqueueAcquireGLObjects:" << err );
-		}
+            //we need to have an RGBA or monochrome image
+            if (m_background[num]->channels() == 3)
+            {
+                if (imgFormat == GL_BGR_EXT) {
+                    cv::cvtColor(m_background[num]->uMat(), *m_convertedImage, cv::COLOR_BGR2RGBA);
+                } else if (imgFormat == GL_RGB) {
+                    cv::cvtColor(m_background[num]->uMat(), *m_convertedImage, cv::COLOR_RGB2RGBA);
+                } else {
+                    LOG4CPP_ERROR( logger, "Error: received incompatible format for conversion to RGBA: " << imgFormat);
+                }
+                imgFormat = GL_RGBA;
+                numOfChannels = 4;
+            } else {
+                *m_convertedImage = m_background[num]->uMat();
+            }
 
-		size_t offset = 0; 
-		size_t dst_origin[3] = {0, 0, 0};
-		size_t region[3] = {static_cast<size_t>(m_convertedImage->size().width), static_cast<size_t>(m_convertedImage->size().height), 1};
+            cl_mem clBuffer = (cl_mem) m_convertedImage->handle(cv::ACCESS_READ);
+            cl_command_queue commandQueue = oclManager.getCommandQueue();
 
-		err = clEnqueueCopyBufferToImage(commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
-		if(err != CL_SUCCESS)
-		{
-			LOG4CPP_INFO( logger, "error at  clEnqueueAcquireGLObjects:" << err );
-		}
-		
-		if (err != CL_SUCCESS)
-		{
-			LOG4CPP_INFO( logger, "error at  clEnqueueCopyBufferToImage:" << err );
-		}
+            cl_int err;
+            err = clEnqueueAcquireGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
+            if(err != CL_SUCCESS)
+            {
+                LOG4CPP_ERROR( logger, "error at  clEnqueueAcquireGLObjects:" << err );
+            }
 
-		err = clEnqueueReleaseGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
-		if(err != CL_SUCCESS) 
-		{
-			LOG4CPP_INFO( logger, "error at  clEnqueueReleaseGLObjects:" << err );
-		}
+            size_t offset = 0;
+            size_t dst_origin[3] = {0, 0, 0};
+            size_t region[3] = {static_cast<size_t>(m_convertedImage->size().width), static_cast<size_t>(m_convertedImage->size().height), 1};
 
-		err = clFinish(commandQueue);
+            err = clEnqueueCopyBufferToImage(commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
+            if(err != CL_SUCCESS)
+            {
+                LOG4CPP_ERROR( logger, "error at  clEnqueueAcquireGLObjects:" << err );
+            }
 
-		if (err != CL_SUCCESS)
-		{
-			LOG4CPP_INFO( logger, "error at  clFinish:" << err );
-		}
+            if (err != CL_SUCCESS)
+            {
+                LOG4CPP_ERROR( logger, "error at  clEnqueueCopyBufferToImage:" << err );
+            }
 
+            err = clEnqueueReleaseGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
+            if(err != CL_SUCCESS)
+            {
+                LOG4CPP_ERROR( logger, "error at  clEnqueueReleaseGLObjects:" << err );
+            }
+
+            err = clFinish(commandQueue);
+
+            if (err != CL_SUCCESS)
+            {
+                LOG4CPP_ERROR( logger, "error at  clFinish:" << err );
+            }
+#else
+            LOG4CPP_ERROR( logger, "Image isOnGPU but OpenCL is disabled!!");
+#endif
+        } else {
+            // load image into texture
+            glBindTexture( GL_TEXTURE_2D, m_texture );
+#ifdef DO_TIMING
+            {
+			UBITRACK_TIME( m_textureUpdateTimer );
+#endif
+            glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, m_background[ num ]->width(), m_background[ num ]->height(),
+                    imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->iplImage()->imageData );
+#ifdef DO_TIMING
+            }
+#endif
+
+        }
 
 		glBindTexture(GL_TEXTURE_2D, m_texture);
- 
+
 		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 		// display textured rectangle
@@ -311,158 +347,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	glPopMatrix();
 	glMatrixMode( GL_MODELVIEW );
 }
-#else 
 
-/** render the object */
-void BackgroundImage::draw( Measurement::Timestamp& t, int num )
-{
-	// Disable transparency for background image. The Transparency
-	// module might have enabled global transparency for the virtual
-	// scene.  We have to restore this state below.
-	glDisable( GL_BLEND );
-
-	// use image in stereo mode only if correct eye
-	if ( ( m_stereoEye == stereoEyeRight && num ) || ( m_stereoEye == stereoEyeLeft && !num ) )
-		return;
-		
-	// check if we have an image to display as background
-	if ( m_background[num].get() == 0 ) return;
-
-	int m_width  = m_pModule->m_width;
-	int m_height = m_pModule->m_height;
-
-	// store the projection matrix
-	glMatrixMode( GL_PROJECTION );
-	glPushMatrix();
-
-	// create a 2D-orthogonal projection matrix
-	glLoadIdentity();
-	gluOrtho2D( 0.0, m_width, 0.0, m_height );
-
-	// prepare fullscreen bitmap without fancy extras
-	GLboolean bLightingEnabled = glIsEnabled( GL_LIGHTING );
-	glDisable( GL_LIGHTING );
-	glDisable( GL_DEPTH_TEST );
-	
-	// lock it to avoid random crashes
-	boost::mutex::scoped_lock l( m_imageLock[num] );
-	
-	// find out texture format
-	GLenum imgFormat = GL_LUMINANCE;
-	switch ( m_background[num]->channels() ) {
-		case 1: imgFormat = GL_LUMINANCE; break;
-#ifndef GL_BGR_EXT
-		case 3: imgFormat = GL_RGB; break;
-#else
-		case 3: 
-			if ( m_background[ num ]->iplImage()->channelSeq[ 0 ] == 'B' && m_background[ num ]->iplImage()->channelSeq[ 1 ] == 'G' && m_background[ num ]->iplImage()->channelSeq[ 2 ] == 'R' )
-				imgFormat = GL_BGR_EXT;
-			else
-				imgFormat = GL_RGB;
-			break;
-#endif
-	}
-	
-	if ( !m_bUseTexture )
-	{
-		// glDrawPixels version
-		glDisable( GL_TEXTURE_2D );
-
-		if ( m_background[num]->iplImage()->origin ) {
-			glRasterPos2i( 0, 0 );
-			glPixelZoom(
-				((float)m_width /(float)m_background[num]->width() )*1.0000001f,
-				((float)m_height/(float)m_background[num]->height())*1.0000001f
-			);
-		} else {
-			glRasterPos2i( 0, m_height-1 );
-			glPixelZoom(
-				 ((float)m_width /(float)m_background[num]->width() )*1.0000001f,
-				-((float)m_height/(float)m_background[num]->height())*1.0000001f
-			);
-		}
-		glDrawPixels( m_background[num]->width(), m_background[num]->height(), imgFormat, GL_UNSIGNED_BYTE, m_background[num]->iplImage()->imageData );
-	}
-	else
-	{
-		// texture version
-		glEnable( GL_TEXTURE_2D );
-
-		if ( !m_bTextureInitialized )
-		{
-			m_bTextureInitialized = true;
-			
-			// generate power-of-two sizes
-			m_pow2Width = 1;
-			while ( m_pow2Width < (unsigned)m_background[ num ]->width() )
-				m_pow2Width <<= 1;
-				
-			m_pow2Height = 1;
-			while ( m_pow2Height < (unsigned)m_background[ num ]->height() )
-				m_pow2Height <<= 1;
-			
-			// create new empty texture
-			glGenTextures( 1, &m_texture );
-			glBindTexture( GL_TEXTURE_2D, m_texture );
-			
-			// define texture parameters
-		    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		    glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
-			
-			// load empty texture image (defines texture size)
-			glTexImage2D( GL_TEXTURE_2D, 0, 3, m_pow2Width, m_pow2Height, 0, imgFormat, GL_UNSIGNED_BYTE, 0 );
-			LOG4CPP_DEBUG( logger, "glTexImage2D( width=" << m_pow2Width << ", height=" << m_pow2Height << " ): " << glGetError() );
-		}
-		
-		// load image into texture
-		glBindTexture( GL_TEXTURE_2D, m_texture );
-#ifdef DO_TIMING
-		{
-			UBITRACK_TIME( m_textureUpdateTimer );
-#endif
-		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, m_background[ num ]->width(), m_background[ num ]->height(), 
-			imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->iplImage()->imageData );
-#ifdef DO_TIMING
-		}
-#endif		
-		// display textured rectangle
-		double y0 = m_background[ num ]->iplImage()->origin ? 0 : m_height;
-		double y1 = m_height - y0;
-		double tx = double( m_background[ num ]->width() ) / m_pow2Width;
-		double ty = double( m_background[ num ]->height() ) / m_pow2Height;
-
-		// draw two triangles
-		glBegin( GL_TRIANGLE_STRIP );
-		glTexCoord2d(  0, ty ); glVertex2d(       0, y1 );
-		glTexCoord2d(  0,  0 ); glVertex2d(       0, y0 );
-		glTexCoord2d( tx, ty ); glVertex2d( m_width, y1 );
-		glTexCoord2d( tx,  0 ); glVertex2d( m_width, y0 );
-		glEnd();
-		
-		glDisable( GL_TEXTURE_2D );
-	}
-
-	// change timestamp to image time
-	t = m_background[num].time();
-
-	// restore opengl state
-	glEnable( GL_BLEND );
-	glEnable( GL_DEPTH_TEST );
-	if ( bLightingEnabled )
-		glEnable( GL_LIGHTING );
-
-	glPopMatrix();
-	glMatrixMode( GL_MODELVIEW );
-	m_counter++;
-	if(m_counter > 10){
-		LOG4CPP_INFO(logger, "measuremts: " << m_textureUpdateTimer );
-		m_counter = 0;
-	}
-
-}
-
-#endif
 
 /**
  * callback from Image port
@@ -471,17 +356,12 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
  */
 void BackgroundImage::imageIn( const Ubitrack::Measurement::ImageMeasurement& img, int num )
 {
-	//cv::imshow("umatImage", img->uMat());
-	//cv::waitKey(10);
-	//img->uMat();
-	//img->iplImage();
-	////cvShowImage("image", img->iplImage());
-	//cv::waitKey(10);
-	//cvWaitKey(4);
-	
 	LOG4CPP_DEBUG( logger, "received background image with timestamp " << img.time() );
-	boost::mutex::scoped_lock l( m_imageLock[num] );		
-	if(img->depth() == IPL_DEPTH_32F){		
+	boost::mutex::scoped_lock l( m_imageLock[num] );
+
+	if(img->depth() == IPL_DEPTH_32F){
+        // @todo should this computation be moved to the rendering thread ?
+        // also this does assume the image is on CPU !!!
 		boost::shared_ptr<Ubitrack::Vision::Image> p(new Ubitrack::Vision::Image(img->width(), img->height(), 1, IPL_DEPTH_8U ));
 		float* depthData = (float*) img->iplImage()->imageData;
 		unsigned char* up =(unsigned char*) p->iplImage()->imageData;
@@ -496,11 +376,6 @@ void BackgroundImage::imageIn( const Ubitrack::Measurement::ImageMeasurement& im
 	} else {
 		m_background[num] = img;
 	}
-	//cv::imshow("stored background", m_background[num]->uMat());
-	//cv::waitKey(4);
-
-	//cvShowImage("stored background3", m_background[num]->iplImage());
-	//cvWaitKey(4);
 	m_pModule->invalidate( this );
 }
 

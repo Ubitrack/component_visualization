@@ -851,13 +851,14 @@
         
         <DataflowConfiguration>
             <UbitrackLib class="BackgroundImage"/>
-            <Attribute name="useTexture" displayName="use background texture" default="true" xsi:type="StringAttributeDeclarationType">
-				<!-- Why is there no BooleanAttributeDeclarationType!? -->
+            <Attribute name="useTexture" displayName="use background texture" default="true" xsi:type="EnumAttributeDeclarationType">
                 <Description>
-                    <h:p>Use background texture (true/false). If false,
-                        <h:tt>glDrawPixels</h:tt> is used instead.
+                    <h:p>
+                        Use background texture (true/false). If false, <h:tt>glDrawPixels</h:tt> is used instead.
                     </h:p>
                 </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true"  displayName="True"/>
             </Attribute>
         </DataflowConfiguration>
     </Pattern>

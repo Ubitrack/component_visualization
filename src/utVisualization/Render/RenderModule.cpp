@@ -77,11 +77,13 @@ log4cpp::Category& loggerEvents( log4cpp::Category::getInstance( "Ubitrack.Event
 #include <math.h>
 
 //OCL
+#ifdef HAVE_OPENCL
 #include <opencv2/core/ocl.hpp>
 #ifdef __APPLE__
     #include "OpenCL/cl_gl.h"
 #else
     #include "CL/cl_gl.h"
+#endif
 #endif
 #include <GL/glut.h>
 
@@ -110,7 +112,10 @@ int g_run = 1;
 int   g_argc   = 1;
 char* g_argv[] = { "VirtualCamera", 0 };
 
-
+// callback definitions
+void g_display();
+void g_keyboard( unsigned char key, int x, int y );
+void g_reshape( int w, int h );
 
 void g_mainloop()
 {
@@ -127,8 +132,10 @@ void g_mainloop()
 	{
 #endif
 		glutInit( &g_argc, g_argv );
+
 		glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
 		glutSetOption( GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION );
+
 	}
 
 	while (g_run)
@@ -232,6 +239,7 @@ void g_mainloop()
 
 void g_display()
 {
+	LOG4CPP_DEBUG( logger, "g_display()" );
 	VirtualCamera* win = g_modules[ glutGetWindow() ];
 	if ( win ) win->display();
 }
@@ -239,6 +247,7 @@ void g_display()
 
 void g_keyboard( unsigned char key, int x, int y )
 {
+	LOG4CPP_DEBUG( logger, "g_keyboard()" );
 	VirtualCamera* win = g_modules[ glutGetWindow() ];
 	if ( win ) win->keyboard( key, x, y );
 }
@@ -246,6 +255,7 @@ void g_keyboard( unsigned char key, int x, int y )
 
 void g_reshape( int w, int h )
 {
+	LOG4CPP_DEBUG( logger, "g_reshape()" );
 	VirtualCamera* win = g_modules[ glutGetWindow() ];
 	if ( win ) win->reshape( w, h );
 }
@@ -254,12 +264,14 @@ void g_reshape( int w, int h )
 
 int VirtualCamera::setup()
 {
-    LOG4CPP_DEBUG( logger, "setup(): Starting setup of window for module key " << m_moduleKey );
+	LOG4CPP_DEBUG( logger, "setup(): Starting setup of window for module key " << m_moduleKey );
+
 
 	// enable stencil buffer?
-	if ( m_moduleKey.m_bEnableStencil )
-		glutInitDisplayMode( GLUT_DEPTH | GLUT_RGB | GLUT_DOUBLE | GLUT_STENCIL );    
-	
+	if ( m_moduleKey.m_bEnableStencil ) {
+		glutInitDisplayMode( GLUT_DEPTH | GLUT_RGB | GLUT_DOUBLE | GLUT_STENCIL );
+	}
+
 	if ( !m_moduleKey.m_sGameMode.empty() )
 	{
 		glutGameModeString( m_moduleKey.m_sGameMode.c_str() );
@@ -272,10 +284,10 @@ int VirtualCamera::setup()
 		if (g_names.find( parent ) == g_names.end()) return 0;
 		// parent is there, so create the subwindow
 		m_winHandle = glutCreateSubWindow( g_names[parent], 0, 0, m_width, m_height );
-	} 
+	}
 	else 
 	{
-		// create new top level window, 
+		// create new top level window,
 		glutInitWindowSize( m_width, m_height );
 		m_winHandle = glutCreateWindow( m_moduleKey.c_str() );
 	}
@@ -346,7 +358,7 @@ int VirtualCamera::setup()
 	glutDisplayFunc ( g_display  );
 	glutReshapeFunc ( g_reshape  );
 
-	
+
 	Ubitrack::Vision::OpenCLManager& oclManager = Ubitrack::Vision::OpenCLManager::singleton();
 
 	ComponentList objects = getAllComponents();
@@ -354,7 +366,8 @@ int VirtualCamera::setup()
 	{
         (*i)->glInit();
     }
-     
+
+	m_isSetupComplete = true;
 	return 1;
 }
 
@@ -380,6 +393,7 @@ void VirtualCamera::cleanup( VirtualObject* vo )
 
 	// Scoped lock
 	boost::mutex::scoped_lock l( g_globalMutex );
+	m_isSetupComplete = false;
 
 	// Enqueue component for cleanup of GL context
 	g_cleanup_components.insert( vo );
@@ -413,6 +427,9 @@ void VirtualCamera::redraw( )
 	m_redraw = 0;
 }
 
+bool VirtualCamera::isSetupComplete() {
+	return m_isSetupComplete;
+}
 
 VirtualCamera::VirtualCamera( const VirtualCameraKey& key, boost::shared_ptr< Graph::UTQLSubgraph >, FactoryHelper* pFactory )
 	: Module< VirtualCameraKey, VirtualObjectKey, VirtualCamera, VirtualObject >( key, pFactory )
@@ -431,6 +448,7 @@ VirtualCamera::VirtualCamera( const VirtualCameraKey& key, boost::shared_ptr< Gr
 	, m_lastRedrawTime(0)
 	, m_vsync()
 	, m_stereoRenderPasses( stereoRenderNone )
+	, m_isSetupComplete(false)
 {
 	LOG4CPP_DEBUG( logger, "VirtualCamera(): Creating module for module key '" << m_moduleKey << "'...");
 
