@@ -147,7 +147,10 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			break;
 #endif
 		default:
-			imgFormat = GL_RGBA;
+            if ( m_background[ num ]->iplImage()->channelSeq[ 0 ] == 'B' && m_background[ num ]->iplImage()->channelSeq[ 1 ] == 'G' && m_background[ num ]->iplImage()->channelSeq[ 2 ] == 'R' )
+                imgFormat = GL_BGRA;
+            else
+                imgFormat = GL_RGBA;
 			break;
 	}
 
@@ -200,7 +203,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			glTexImage2D( GL_TEXTURE_2D, 0, numOfChannels, m_pow2Width, m_pow2Height, 0, imgFormat, GL_UNSIGNED_BYTE, 0 );
 			LOG4CPP_DEBUG( logger, "glTexImage2D( width=" << m_pow2Width << ", height=" << m_pow2Height << " ): " << glGetError() );
 		
-			LOG4CPP_INFO( logger, "initalized texture" );
+			LOG4CPP_INFO( logger, "initalized texture GPU? " << image_isOnGPU);
 
 
             if (image_isOnGPU) {
@@ -237,8 +240,10 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
             if (m_background[num]->channels() == 3)
             {
                 if (imgFormat == GL_BGR_EXT) {
+                    LOG4CPP_DEBUG(logger, "XXX BGR");
                     cv::cvtColor(m_background[num]->uMat(), *m_convertedImage, cv::COLOR_BGR2RGBA);
                 } else if (imgFormat == GL_RGB) {
+                    LOG4CPP_DEBUG(logger, "XXX RGB");
                     cv::cvtColor(m_background[num]->uMat(), *m_convertedImage, cv::COLOR_RGB2RGBA);
                 } else {
                     LOG4CPP_ERROR( logger, "Error: received incompatible format for conversion to RGBA: " << imgFormat);
@@ -246,6 +251,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
                 imgFormat = GL_RGBA;
                 numOfChannels = 4;
             } else {
+                LOG4CPP_DEBUG(logger, "XXX 4CHAN");
                 *m_convertedImage = m_background[num]->uMat();
             }
 
@@ -253,12 +259,16 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
             cl_command_queue commandQueue = oclManager.getCommandQueue();
 
             cl_int err;
+
+//#ifdef __APPLE__
+//            glFlushRenderAPPLE();
+//#else
             err = clEnqueueAcquireGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
             if(err != CL_SUCCESS)
             {
                 LOG4CPP_ERROR( logger, "error at  clEnqueueAcquireGLObjects:" << err );
             }
-
+//#endif
             size_t offset = 0;
             size_t dst_origin[3] = {0, 0, 0};
             size_t region[3] = {static_cast<size_t>(m_convertedImage->size().width), static_cast<size_t>(m_convertedImage->size().height), 1};
@@ -274,14 +284,21 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
                 LOG4CPP_ERROR( logger, "error at  clEnqueueCopyBufferToImage:" << err );
             }
 
+//#ifdef __APPLE__
+//            err = clFlush(commandQueue);
+//            if (err != CL_SUCCESS)
+//            {
+//                LOG4CPP_ERROR( logger, "error at  clFlush:" << err );
+//            }
+//#else
             err = clEnqueueReleaseGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
             if(err != CL_SUCCESS)
             {
                 LOG4CPP_ERROR( logger, "error at  clEnqueueReleaseGLObjects:" << err );
             }
+//#endif
 
             err = clFinish(commandQueue);
-
             if (err != CL_SUCCESS)
             {
                 LOG4CPP_ERROR( logger, "error at  clFinish:" << err );
