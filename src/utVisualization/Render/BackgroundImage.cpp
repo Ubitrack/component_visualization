@@ -132,7 +132,11 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	int numOfChannels = 4;
 	switch ( m_background[num]->channels() ) {
 		case 1: 
-			imgFormat = GL_LUMINANCE; 
+			imgFormat = GL_LUMINANCE;
+			numOfChannels = 1;
+			break;
+		case 2:
+			imgFormat = GL_LUMINANCE;
 			numOfChannels = 1;
 			break;
 #ifndef GL_BGR_EXT
@@ -203,7 +207,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			glTexImage2D( GL_TEXTURE_2D, 0, numOfChannels, m_pow2Width, m_pow2Height, 0, imgFormat, GL_UNSIGNED_BYTE, 0 );
 			LOG4CPP_DEBUG( logger, "glTexImage2D( width=" << m_pow2Width << ", height=" << m_pow2Height << " ): " << glGetError() );
 		
-			LOG4CPP_INFO( logger, "initalized texture GPU? " << image_isOnGPU);
+			LOG4CPP_INFO( logger, "initalized texture ( " << imgFormat << " ) GPU? " << image_isOnGPU);
 
 
             if (image_isOnGPU) {
@@ -215,6 +219,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
                 {
                     LOG4CPP_ERROR( logger, "error at  clCreateFromGLTexture2D:" << err );
                 }
+				// @todo the allocation is done here on GPU without caring about possible copy or assignment operations later
                 //we need to have an RGBA or monochrome image
                 if (m_background[num]->channels() == 3 || m_background[num]->channels() == 4)
                 {
@@ -222,7 +227,9 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
                 } else if (m_background[num]->channels() == 1 )
                 {
                     m_convertedImage.reset(new cv::UMat(m_background[ num ]->uMat().size(), CV_8UC1));
-                }
+                } else {
+					LOG4CPP_ERROR( logger, "Invalid channel-size when creating converted image:" << m_background[num]->channels() );
+				}
 #endif
             }
 
@@ -235,9 +242,22 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
         if (image_isOnGPU) {
 #ifdef HAVE_OPENCL
-
+			// @todo we really need an image-format flag and pixeltype on the image class ..
             //we need to have an RGBA or monochrome image
-            if (m_background[num]->channels() == 3)
+			if (m_background[num]->channels() == 1) {
+				LOG4CPP_DEBUG(logger, "XXX U8 " <<  m_background[num]->uMat().elemSize());
+				if (m_background[num]->uMat().elemSize() == 2) {
+					m_background[num]->uMat().convertTo(*m_convertedImage, CV_8U, 0.00390625);
+				} else {
+					*m_convertedImage = m_background[num]->uMat();
+				}
+				numOfChannels = 1;
+			} else if (m_background[num]->channels() == 2) {
+				LOG4CPP_DEBUG(logger, "XXX U16");
+				// @todo fix me: currently we're down-casting 16bit to 8bit monochrome when using gpu-image.
+				m_background[num]->uMat().convertTo(*m_convertedImage, CV_8U, 0.00390625);
+				numOfChannels = 1;
+			} else if (m_background[num]->channels() == 3)
             {
                 if (imgFormat == GL_BGR_EXT) {
                     LOG4CPP_DEBUG(logger, "XXX BGR");
@@ -250,10 +270,12 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
                 }
                 imgFormat = GL_RGBA;
                 numOfChannels = 4;
-            } else {
+            } else  if (m_background[num]->channels() == 4) {
                 LOG4CPP_DEBUG(logger, "XXX 4CHAN");
                 *m_convertedImage = m_background[num]->uMat();
-            }
+            } else {
+				LOG4CPP_ERROR(logger, "Unkown channel-size: " << m_background[num]->channels());
+			}
 
             cl_mem clBuffer = (cl_mem) m_convertedImage->handle(cv::ACCESS_READ);
             cl_command_queue commandQueue = oclManager.getCommandQueue();
