@@ -168,7 +168,7 @@ protected:
 
 	void myShowImage( const std::string& name, const boost::shared_ptr< Image > pImage )
 	{
-		cvShowImage( name.c_str(), *pImage );
+		cvShowImage( name.c_str(), &(pImage->Mat()) );
 	}
 
 	// the thread

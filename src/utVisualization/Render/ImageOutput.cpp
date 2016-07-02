@@ -44,14 +44,14 @@ void ImageOutput::draw( Measurement::Timestamp&, int parity )
 	{
 		m_width  = m_pModule->m_width;
 		m_height = m_pModule->m_height;
-		if ((m_image) && (m_image->iplImage()->imageData)) delete[] (unsigned char*)(m_image->iplImage()->imageData);
+		if ((m_image) && (m_image->Mat().data)) delete[] (unsigned char*)(m_image->Mat().data);
 		data = new unsigned char[m_width*m_height*3];
 		m_image = boost::shared_ptr< Vision::Image >( new Vision::Image( m_width, m_height, 3, data, IPL_DEPTH_8U ) );
 	}
 
-	data = (unsigned char*)m_image->iplImage()->imageData;
+	data = (unsigned char*)m_image->Mat().data;
 	glReadPixels( 0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, data ); 
-	m_image->iplImage()->origin = 1;
+	m_image->set_origin(1);
 
 	m_port.send( Measurement::ImageMeasurement( Measurement::now(), m_image ) );
 }

@@ -130,31 +130,33 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	// find out texture format
 	GLenum imgFormat = GL_LUMINANCE;
 	int numOfChannels = 4;
-	switch ( m_background[num]->channels() ) {
-		case 1: 
-			imgFormat = GL_LUMINANCE;
-			numOfChannels = 1;
-			break;
-		case 2:
+	switch ( m_background[num]->pixelFormat() ) {
+		case Vision::Image::LUMINANCE:
 			imgFormat = GL_LUMINANCE;
 			numOfChannels = 1;
 			break;
 #ifndef GL_BGR_EXT
-		case 3: imgFormat = GL_RGB; break;
+		case Vision::Image::BGR: imgFormat = GL_RGB; numOfChannels = 3; break;
 #else
-		case 3:
+		case Vision::Image::RGB:
             numOfChannels = 3;
-			if ( m_background[ num ]->iplImage()->channelSeq[ 0 ] == 'B' && m_background[ num ]->iplImage()->channelSeq[ 1 ] == 'G' && m_background[ num ]->iplImage()->channelSeq[ 2 ] == 'R' )
-				imgFormat = GL_BGR_EXT;
-			else
-				imgFormat = GL_RGB;
+			imgFormat = GL_RGB;
+			break;
+		case Vision::Image::BGR:
+			numOfChannels = 3;
+			imgFormat = GL_BGR_EXT;
 			break;
 #endif
+		case Vision::Image::RGBA:
+			numOfChannels = 4;
+			imgFormat = GL_RGBA;
+			break;
+		case Vision::Image::BGRA:
+			numOfChannels = 4;
+			imgFormat = GL_BGRA;
+			break;
 		default:
-            if ( m_background[ num ]->iplImage()->channelSeq[ 0 ] == 'B' && m_background[ num ]->iplImage()->channelSeq[ 1 ] == 'G' && m_background[ num ]->iplImage()->channelSeq[ 2 ] == 'R' )
-                imgFormat = GL_BGRA;
-            else
-                imgFormat = GL_RGBA;
+			// Log Error ?
 			break;
 	}
 
@@ -176,7 +178,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 				-((float)m_height/(float)m_background[num]->height())*1.0000001f
 			);
 		}
-		glDrawPixels( m_background[num]->width(), m_background[num]->height(), imgFormat, GL_UNSIGNED_BYTE, m_background[num]->iplImage()->imageData );
+		glDrawPixels( m_background[num]->width(), m_background[num]->height(), imgFormat, GL_UNSIGNED_BYTE, m_background[num]->Mat().data );
 	}
 	else
 	{
@@ -336,7 +338,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			UBITRACK_TIME( m_textureUpdateTimer );
 #endif
             glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, m_background[ num ]->width(), m_background[ num ]->height(),
-                    imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->iplImage()->imageData );
+                    imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->Mat().data );
 #ifdef DO_TIMING
             }
 #endif
@@ -402,8 +404,8 @@ void BackgroundImage::imageIn( const Ubitrack::Measurement::ImageMeasurement& im
         // @todo should this computation be moved to the rendering thread ?
         // also this does assume the image is on CPU !!!
 		boost::shared_ptr<Ubitrack::Vision::Image> p(new Ubitrack::Vision::Image(img->width(), img->height(), 1, IPL_DEPTH_8U ));
-		float* depthData = (float*) img->iplImage()->imageData;
-		unsigned char* up =(unsigned char*) p->iplImage()->imageData;
+		float* depthData = (float*) img->Mat().data;
+		unsigned char* up =(unsigned char*) p->Mat().data;
 		LOG4CPP_INFO(logger, "copy data");
 		for(unsigned int i=0;i<img->width()*img->height();i++)
 			if(depthData[i] != depthData[i])
