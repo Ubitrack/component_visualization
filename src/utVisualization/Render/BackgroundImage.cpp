@@ -129,19 +129,19 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	
 	// find out texture format
 	GLenum imgFormat = GL_LUMINANCE;
-	int numOfChannels = 4;
+	int numOfChannels = 1;
 	switch ( m_background[num]->pixelFormat() ) {
 		case Vision::Image::LUMINANCE:
 			imgFormat = GL_LUMINANCE;
 			numOfChannels = 1;
 			break;
+		case Vision::Image::RGB:
+			numOfChannels = 3;
+			imgFormat = GL_RGB;
+			break;
 #ifndef GL_BGR_EXT
 		case Vision::Image::BGR: imgFormat = GL_RGB; numOfChannels = 3; break;
 #else
-		case Vision::Image::RGB:
-            numOfChannels = 3;
-			imgFormat = GL_RGB;
-			break;
 		case Vision::Image::BGR:
 			numOfChannels = 3;
 			imgFormat = GL_BGR_EXT;
