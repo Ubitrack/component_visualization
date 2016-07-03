@@ -44,10 +44,6 @@ BackgroundImage::BackgroundImage( const std::string& name, boost::shared_ptr< Gr
 	, m_bTextureInitialized( false )
 	, m_image0( "Image1", *this, boost::bind( &BackgroundImage::imageIn, this, _1, 0 ))
 	, m_image1( "Image2", *this, boost::bind( &BackgroundImage::imageIn, this, _1, 1 ))
-#ifdef DO_TIMING
-	, m_textureUpdateTimer( "TextureUpdateTimer", "Ubitrack.Timing" )
-	, m_counter(0)
-#endif
 {
 	if ( subgraph->m_DataflowAttributes.getAttributeString( "useTexture" ) == "false" ) 
 	{
@@ -128,6 +124,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
     bool image_isOnGPU = oclManager.isEnabled() & m_background[num]->isOnGPU();
 	
 	// find out texture format
+	int umatConvertCode = 0;
 	GLenum imgFormat = GL_LUMINANCE;
 	int numOfChannels = 1;
 	switch ( m_background[num]->pixelFormat() ) {
@@ -137,14 +134,20 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			break;
 		case Vision::Image::RGB:
 			numOfChannels = 3;
-			imgFormat = GL_RGB;
+			imgFormat = image_isOnGPU ? GL_RGBA : GL_RGB;
+			umatConvertCode = cv::COLOR_RGB2RGBA;
 			break;
 #ifndef GL_BGR_EXT
-		case Vision::Image::BGR: imgFormat = GL_RGB; numOfChannels = 3; break;
+		case Vision::Image::BGR:
+			imgFormat = image_isOnGPU ? GL_RGBA : GL_RGB;
+			numOfChannels = 3;
+			umatConvertCode = cv::COLOR_BGR2RGBA;
+			break;
 #else
 		case Vision::Image::BGR:
 			numOfChannels = 3;
-			imgFormat = GL_BGR_EXT;
+			imgFormat = image_isOnGPU ? GL_RGBA : GL_BGR_EXT;
+			umatConvertCode = cv::COLOR_BGR2RGBA;
 			break;
 #endif
 		case Vision::Image::RGBA:
@@ -153,7 +156,8 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			break;
 		case Vision::Image::BGRA:
 			numOfChannels = 4;
-			imgFormat = GL_BGRA;
+			imgFormat = image_isOnGPU ? GL_RGBA : GL_BGRA;
+			umatConvertCode = cv::COLOR_BGRA2RGBA;
 			break;
 		default:
 			// Log Error ?
@@ -213,7 +217,9 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
 
             if (image_isOnGPU) {
+
 #ifdef HAVE_OPENCL
+//                oclManager.acquireContext();
                 //Get an image Object from the OpenGL texture
                 cl_int err;
                 m_clImage = clCreateFromGLTexture2D( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, m_texture, &err);
@@ -221,65 +227,24 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
                 {
                     LOG4CPP_ERROR( logger, "error at  clCreateFromGLTexture2D:" << err );
                 }
-				// @todo the allocation is done here on GPU without caring about possible copy or assignment operations later
-                //we need to have an RGBA or monochrome image
-                if (m_background[num]->channels() == 3 || m_background[num]->channels() == 4)
-                {
-                    m_convertedImage.reset(new cv::UMat(m_background[ num ]->uMat().size(), CV_8UC4));
-                } else if (m_background[num]->channels() == 1 )
-                {
-                    m_convertedImage.reset(new cv::UMat(m_background[ num ]->uMat().size(), CV_8UC1));
-                } else {
-					LOG4CPP_ERROR( logger, "Invalid channel-size when creating converted image:" << m_background[num]->channels() );
-				}
+//				oclManager.releaseContext();
 #endif
             }
 
 
 		}
-#ifdef DO_TIMING
-		{
-			UBITRACK_TIME( m_textureUpdateTimer );
-#endif
 
         if (image_isOnGPU) {
 #ifdef HAVE_OPENCL
-			// @todo we really need an image-format flag and pixeltype on the image class ..
-            //we need to have an RGBA or monochrome image
-			if (m_background[num]->channels() == 1) {
-				LOG4CPP_DEBUG(logger, "XXX U8 " <<  m_background[num]->uMat().elemSize());
-				if (m_background[num]->uMat().elemSize() == 2) {
-					m_background[num]->uMat().convertTo(*m_convertedImage, CV_8U, 0.00390625);
-				} else {
-					*m_convertedImage = m_background[num]->uMat();
-				}
-				numOfChannels = 1;
-			} else if (m_background[num]->channels() == 2) {
-				LOG4CPP_DEBUG(logger, "XXX U16");
-				// @todo fix me: currently we're down-casting 16bit to 8bit monochrome when using gpu-image.
-				m_background[num]->uMat().convertTo(*m_convertedImage, CV_8U, 0.00390625);
-				numOfChannels = 1;
-			} else if (m_background[num]->channels() == 3)
-            {
-                if (imgFormat == GL_BGR_EXT) {
-                    LOG4CPP_DEBUG(logger, "XXX BGR");
-                    cv::cvtColor(m_background[num]->uMat(), *m_convertedImage, cv::COLOR_BGR2RGBA);
-                } else if (imgFormat == GL_RGB) {
-                    LOG4CPP_DEBUG(logger, "XXX RGB");
-                    cv::cvtColor(m_background[num]->uMat(), *m_convertedImage, cv::COLOR_RGB2RGBA);
-                } else {
-                    LOG4CPP_ERROR( logger, "Error: received incompatible format for conversion to RGBA: " << imgFormat);
-                }
-                imgFormat = GL_RGBA;
-                numOfChannels = 4;
-            } else  if (m_background[num]->channels() == 4) {
-                LOG4CPP_DEBUG(logger, "XXX 4CHAN");
-                *m_convertedImage = m_background[num]->uMat();
-            } else {
-				LOG4CPP_ERROR(logger, "Unkown channel-size: " << m_background[num]->channels());
-			}
+//			oclManager.acquireContext();
 
-            cl_mem clBuffer = (cl_mem) m_convertedImage->handle(cv::ACCESS_READ);
+            if (umatConvertCode != 0) {
+				cv::cvtColor(m_background[num]->uMat(), m_convertedImage, umatConvertCode );
+			} else {
+                m_convertedImage = m_background[num]->uMat();
+            }
+
+            cl_mem clBuffer = (cl_mem) m_convertedImage.handle(cv::ACCESS_READ);
             cl_command_queue commandQueue = oclManager.getCommandQueue();
 
             cl_int err;
@@ -287,15 +252,16 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 //#ifdef __APPLE__
 //            glFlushRenderAPPLE();
 //#else
+//			glFinish();
+//#endif
             err = clEnqueueAcquireGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
             if(err != CL_SUCCESS)
             {
                 LOG4CPP_ERROR( logger, "error at  clEnqueueAcquireGLObjects:" << err );
             }
-//#endif
             size_t offset = 0;
             size_t dst_origin[3] = {0, 0, 0};
-            size_t region[3] = {static_cast<size_t>(m_convertedImage->size().width), static_cast<size_t>(m_convertedImage->size().height), 1};
+            size_t region[3] = {static_cast<size_t>(m_convertedImage.rows), static_cast<size_t>(m_convertedImage.cols), 1};
 
             err = clEnqueueCopyBufferToImage(commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
             if(err != CL_SUCCESS)
@@ -327,21 +293,17 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
             {
                 LOG4CPP_ERROR( logger, "error at  clFinish:" << err );
             }
-#else
+
+//			oclManager.releaseContext();
+
+#else // HAVE_OPENCL
             LOG4CPP_ERROR( logger, "Image isOnGPU but OpenCL is disabled!!");
-#endif
+#endif // HAVE_OPENCL
         } else {
-            // load image into texture
+            // load image from CPU buffer into texture
             glBindTexture( GL_TEXTURE_2D, m_texture );
-#ifdef DO_TIMING
-            {
-			UBITRACK_TIME( m_textureUpdateTimer );
-#endif
             glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, m_background[ num ]->width(), m_background[ num ]->height(),
                     imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->Mat().data );
-#ifdef DO_TIMING
-            }
-#endif
 
         }
 
@@ -366,14 +328,6 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 		glBindTexture(GL_TEXTURE_2D, 0);
  
 		glDisable( GL_TEXTURE_2D );
-#ifdef DO_TIMING
-		}
-		m_counter++;
-		if(m_counter > 10){
-			LOG4CPP_INFO(logger, "measuremts: " << m_textureUpdateTimer );
-			m_counter = 0;
-		}
-#endif 
 	}
 	
 	// change timestamp to image time

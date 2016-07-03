@@ -97,7 +97,7 @@ protected:
 #ifdef HAVE_OPENCL
 	//OpenCL
 	cl_mem m_clImage;
-	boost::shared_ptr<cv::UMat> m_convertedImage;
+	cv::UMat m_convertedImage;
 #endif
 
 	unsigned m_pow2Width;
