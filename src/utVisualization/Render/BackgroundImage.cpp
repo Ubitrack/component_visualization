@@ -196,11 +196,11 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			m_pow2Width = 1;
 			while ( m_pow2Width < (unsigned)m_background[ num ]->width() )
 				m_pow2Width <<= 1;
-			
+
 			m_pow2Height = 1;
 			while ( m_pow2Height < (unsigned)m_background[ num ]->height() )
 				m_pow2Height <<= 1;
-		
+
 			glGenTextures( 1, &m_texture );
 			glBindTexture( GL_TEXTURE_2D, m_texture );
 		
