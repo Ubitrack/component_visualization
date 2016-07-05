@@ -122,7 +122,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
     // if OpenCL is enabled and image is on GPU, then use OCL codepath
     bool image_isOnGPU = oclManager.isEnabled() & m_background[num]->isOnGPU();
-	
+
 	// find out texture format
 	int umatConvertCode = 0;
 	GLenum imgFormat = GL_LUMINANCE;
@@ -133,19 +133,19 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			numOfChannels = 1;
 			break;
 		case Vision::Image::RGB:
-			numOfChannels = 3;
+			numOfChannels = image_isOnGPU ? 4 : 3;
 			imgFormat = image_isOnGPU ? GL_RGBA : GL_RGB;
 			umatConvertCode = cv::COLOR_RGB2RGBA;
 			break;
 #ifndef GL_BGR_EXT
 		case Vision::Image::BGR:
 			imgFormat = image_isOnGPU ? GL_RGBA : GL_RGB;
-			numOfChannels = 3;
+			numOfChannels = image_isOnGPU ? 4 : 3;
 			umatConvertCode = cv::COLOR_BGR2RGBA;
 			break;
 #else
 		case Vision::Image::BGR:
-			numOfChannels = 3;
+			numOfChannels = image_isOnGPU ? 4 : 3;
 			imgFormat = image_isOnGPU ? GL_RGBA : GL_BGR_EXT;
 			umatConvertCode = cv::COLOR_BGR2RGBA;
 			break;
@@ -219,15 +219,13 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
             if (image_isOnGPU) {
 
 #ifdef HAVE_OPENCL
-//                oclManager.acquireContext();
                 //Get an image Object from the OpenGL texture
                 cl_int err;
-                m_clImage = clCreateFromGLTexture2D( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, m_texture, &err);
+                m_clImage = clCreateFromGLTexture( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, m_texture, &err);
                 if (err != CL_SUCCESS)
                 {
                     LOG4CPP_ERROR( logger, "error at  clCreateFromGLTexture2D:" << err );
                 }
-//				oclManager.releaseContext();
 #endif
             }
 
@@ -236,7 +234,6 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
         if (image_isOnGPU) {
 #ifdef HAVE_OPENCL
-//			oclManager.acquireContext();
 
             if (umatConvertCode != 0) {
 				cv::cvtColor(m_background[num]->uMat(), m_convertedImage, umatConvertCode );
@@ -244,57 +241,37 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
                 m_convertedImage = m_background[num]->uMat();
             }
 
-            cl_mem clBuffer = (cl_mem) m_convertedImage.handle(cv::ACCESS_READ);
-            cl_command_queue commandQueue = oclManager.getCommandQueue();
+			cv::ocl::finish();
 
+            cl_command_queue commandQueue = oclManager.getCommandQueue();
             cl_int err;
 
-//#ifdef __APPLE__
-//            glFlushRenderAPPLE();
-//#else
-//			glFinish();
-//#endif
             err = clEnqueueAcquireGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
             if(err != CL_SUCCESS)
             {
                 LOG4CPP_ERROR( logger, "error at  clEnqueueAcquireGLObjects:" << err );
             }
+
+			cl_mem clBuffer = (cl_mem) m_convertedImage.handle(cv::ACCESS_READ);
+			cl_command_queue cv_ocl_queue = (cl_command_queue)cv::ocl::Queue::getDefault().ptr();
+
             size_t offset = 0;
             size_t dst_origin[3] = {0, 0, 0};
             size_t region[3] = {static_cast<size_t>(m_convertedImage.rows), static_cast<size_t>(m_convertedImage.cols), 1};
 
-            err = clEnqueueCopyBufferToImage(commandQueue, clBuffer, m_clImage, 0, dst_origin, region, 0, NULL, NULL);
-            if(err != CL_SUCCESS)
-            {
-                LOG4CPP_ERROR( logger, "error at  clEnqueueAcquireGLObjects:" << err );
-            }
-
+            err = clEnqueueCopyBufferToImage(cv_ocl_queue, clBuffer, m_clImage, offset, dst_origin, region, 0, NULL, NULL);
             if (err != CL_SUCCESS)
             {
                 LOG4CPP_ERROR( logger, "error at  clEnqueueCopyBufferToImage:" << err );
             }
 
-//#ifdef __APPLE__
-//            err = clFlush(commandQueue);
-//            if (err != CL_SUCCESS)
-//            {
-//                LOG4CPP_ERROR( logger, "error at  clFlush:" << err );
-//            }
-//#else
             err = clEnqueueReleaseGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
             if(err != CL_SUCCESS)
             {
                 LOG4CPP_ERROR( logger, "error at  clEnqueueReleaseGLObjects:" << err );
             }
-//#endif
+			cv::ocl::finish();
 
-            err = clFinish(commandQueue);
-            if (err != CL_SUCCESS)
-            {
-                LOG4CPP_ERROR( logger, "error at  clFinish:" << err );
-            }
-
-//			oclManager.releaseContext();
 
 #else // HAVE_OPENCL
             LOG4CPP_ERROR( logger, "Image isOnGPU but OpenCL is disabled!!");
