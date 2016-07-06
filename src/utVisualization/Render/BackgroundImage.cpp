@@ -216,7 +216,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			LOG4CPP_INFO( logger, "initalized texture ( " << imgFormat << " ) GPU? " << image_isOnGPU);
 
 
-            if (image_isOnGPU) {
+            if (oclManager.isInitialized()) {
 
 #ifdef HAVE_OPENCL
                 //Get an image Object from the OpenGL texture
@@ -244,9 +244,12 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
             }
 
 			cv::ocl::finish();
+			glFinish();
 
             cl_command_queue commandQueue = oclManager.getCommandQueue();
             cl_int err;
+
+			clFinish(commandQueue);
 
             err = clEnqueueAcquireGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
             if(err != CL_SUCCESS)
