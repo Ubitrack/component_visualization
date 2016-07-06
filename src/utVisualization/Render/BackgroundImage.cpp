@@ -210,7 +210,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
 		
 			// load empty texture image (defines texture size)
-			glTexImage2D( GL_TEXTURE_2D, 0, imgFormat, m_pow2Width, m_pow2Height, 0, imgFormat, GL_UNSIGNED_BYTE, 0 );
+			glTexImage2D( GL_TEXTURE_2D, 0, numOfChannels, m_pow2Width, m_pow2Height, 0, imgFormat, GL_UNSIGNED_BYTE, 0 );
 			LOG4CPP_DEBUG( logger, "glTexImage2D( width=" << m_pow2Width << ", height=" << m_pow2Height << " ): " << glGetError() );
 		
 			LOG4CPP_INFO( logger, "initalized texture ( " << imgFormat << " ) GPU? " << image_isOnGPU);
