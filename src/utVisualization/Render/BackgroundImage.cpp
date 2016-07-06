@@ -210,7 +210,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
 		
 			// load empty texture image (defines texture size)
-			glTexImage2D( GL_TEXTURE_2D, 0, numOfChannels, m_pow2Width, m_pow2Height, 0, imgFormat, GL_UNSIGNED_BYTE, 0 );
+			glTexImage2D( GL_TEXTURE_2D, 0, imgFormat, m_pow2Width, m_pow2Height, 0, imgFormat, GL_UNSIGNED_BYTE, 0 );
 			LOG4CPP_DEBUG( logger, "glTexImage2D( width=" << m_pow2Width << ", height=" << m_pow2Height << " ): " << glGetError() );
 		
 			LOG4CPP_INFO( logger, "initalized texture ( " << imgFormat << " ) GPU? " << image_isOnGPU);
@@ -235,6 +235,8 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
         if (image_isOnGPU) {
 #ifdef HAVE_OPENCL
 
+			glBindTexture( GL_TEXTURE_2D, m_texture );
+
             if (umatConvertCode != 0) {
 				cv::cvtColor(m_background[num]->uMat(), m_convertedImage, umatConvertCode );
 			} else {
@@ -257,7 +259,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
             size_t offset = 0;
             size_t dst_origin[3] = {0, 0, 0};
-            size_t region[3] = {static_cast<size_t>(m_convertedImage.rows), static_cast<size_t>(m_convertedImage.cols), 1};
+            size_t region[3] = {static_cast<size_t>(m_convertedImage.cols), static_cast<size_t>(m_convertedImage.rows), 1};
 
             err = clEnqueueCopyBufferToImage(cv_ocl_queue, clBuffer, m_clImage, offset, dst_origin, region, 0, NULL, NULL);
             if (err != CL_SUCCESS)
