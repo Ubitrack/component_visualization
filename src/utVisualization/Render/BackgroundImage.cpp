@@ -124,7 +124,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
     bool image_isOnGPU = oclManager.isEnabled() & m_background[num]->isOnGPU();
 
 	// find out texture format
-	int umatConvertCode = 0;
+	int umatConvertCode = -1;
 	GLenum imgFormat = GL_LUMINANCE;
 	int numOfChannels = 1;
 	switch ( m_background[num]->pixelFormat() ) {
@@ -237,7 +237,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
 			glBindTexture( GL_TEXTURE_2D, m_texture );
 
-            if (umatConvertCode != 0) {
+            if (umatConvertCode != -1) {
 				cv::cvtColor(m_background[num]->uMat(), m_convertedImage, umatConvertCode );
 			} else {
                 m_convertedImage = m_background[num]->uMat();
