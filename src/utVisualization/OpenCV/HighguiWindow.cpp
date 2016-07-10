@@ -166,9 +166,12 @@ protected:
 		m_nWindows++;
 	}
 
-	void myShowImage( const std::string& name, const boost::shared_ptr< Image > pImage )
+	// @todo ->Mat() member function of image should be read-only, and ->WriteableMat() should be non-const
+//	void myShowImage( const std::string& name, const boost::shared_ptr< Image > pImage )
+	void myShowImage( const std::string& name, boost::shared_ptr< Image > pImage )
 	{
-		cvShowImage( name.c_str(), &(pImage->Mat()) );
+		IplImage cvimg = pImage->Mat();
+		cvShowImage( name.c_str(), &cvimg );
 	}
 
 	// the thread
