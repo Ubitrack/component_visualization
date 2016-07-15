@@ -23,6 +23,7 @@
 
 #include "BackgroundImage.h"
 #include <utVision/OpenCLManager.h>
+#include <utUtil/TracingProvider.h>
 
 #ifdef HAVE_OPENCL
 #include <opencv2/core/ocl.hpp>
@@ -288,6 +289,10 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
                     imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->Mat().data );
 
         }
+
+#ifdef ENABLE_EVENT_TRACING
+		TRACEPOINT_MEASUREMENT_RECEIVE(getEventDomain(), m_background[num].time(), getName().c_str(), "TextureUpdated")
+#endif
 
 		glBindTexture(GL_TEXTURE_2D, m_texture);
 
