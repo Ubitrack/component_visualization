@@ -83,7 +83,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
     // access OCL Manager and initialize if needed
 	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
-	static bool isInitialized = false;
+	static bool isInitialized = oclManager.isInitialized();
 	if (!isInitialized)
 	{
         if (oclManager.isEnabled()) {
