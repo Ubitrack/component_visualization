@@ -144,21 +144,26 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 			numOfChannels = image_isOnGPU ? 4 : 3;
 			umatConvertCode = cv::COLOR_BGR2RGBA;
 			break;
+		case Vision::Image::BGRA:
+			numOfChannels = 4;
+			imgFormat = image_isOnGPU ? GL_RGBA : GL_BGRA;
+			umatConvertCode = cv::COLOR_BGRA2RGBA;
+			break;
 #else
 		case Vision::Image::BGR:
 			numOfChannels = image_isOnGPU ? 4 : 3;
 			imgFormat = image_isOnGPU ? GL_RGBA : GL_BGR_EXT;
 			umatConvertCode = cv::COLOR_BGR2RGBA;
 			break;
+		case Vision::Image::BGRA:
+			numOfChannels = 4;
+			imgFormat = image_isOnGPU ? GL_RGBA : GL_BGRA_EXT;
+			umatConvertCode = cv::COLOR_BGRA2RGBA;
+			break;
 #endif
 		case Vision::Image::RGBA:
 			numOfChannels = 4;
 			imgFormat = GL_RGBA;
-			break;
-		case Vision::Image::BGRA:
-			numOfChannels = 4;
-			imgFormat = image_isOnGPU ? GL_RGBA : GL_BGRA;
-			umatConvertCode = cv::COLOR_BGRA2RGBA;
 			break;
 		default:
 			// Log Error ?
@@ -222,7 +227,12 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 #ifdef HAVE_OPENCL
                 //Get an image Object from the OpenGL texture
                 cl_int err;
+// windows specific or opencl version specific ??
+#ifdef WIN32
+                m_clImage = clCreateFromGLTexture2D( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, m_texture, &err);
+#else
                 m_clImage = clCreateFromGLTexture( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, m_texture, &err);
+#endif
                 if (err != CL_SUCCESS)
                 {
                     LOG4CPP_ERROR( logger, "error at  clCreateFromGLTexture2D:" << err );
