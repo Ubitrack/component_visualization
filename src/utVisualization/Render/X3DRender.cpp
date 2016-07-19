@@ -9,7 +9,7 @@
 		#define BOOST_BIND_ENABLE_STDCALL
 	}	
 	#endif		
-	#ifndef WIN64
+	#ifndef _WIN64
 		#define BOOST_BIND_ENABLE_STDCALL
 	#endif
 #endif
