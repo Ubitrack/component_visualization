@@ -170,7 +170,8 @@ protected:
 //	void myShowImage( const std::string& name, const boost::shared_ptr< Image > pImage )
 	void myShowImage( const std::string& name, boost::shared_ptr< Image > pImage )
 	{
-		IplImage cvimg = pImage->Mat();
+		IplImage cvimg = pImage->Mat();				
+		cvimg.origin = pImage->origin();		
 		cvShowImage( name.c_str(), &cvimg );
 	}
 
