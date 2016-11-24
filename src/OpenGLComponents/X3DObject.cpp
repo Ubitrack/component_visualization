@@ -1,3 +1,5 @@
+#ifdef X3DRENDERER_ENABLED
+
 /*
  * Ubitrack - Library for Ubiquitous Tracking
  * Copyright 2006, Technische Universitaet Muenchen, and individual
@@ -71,3 +73,4 @@ void X3DObject::draw3DContent( Measurement::Timestamp& t, int parity )
 
 } } // namespace Ubitrack::Drivers
 
+#endif // X3DRENDERER_ENABLED

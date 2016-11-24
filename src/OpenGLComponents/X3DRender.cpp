@@ -1,3 +1,5 @@
+#ifdef X3DRENDERER_ENABLED
+
 #include "X3DRender.h"
 #include "tools.h"
 
@@ -409,3 +411,4 @@ bool X3DRender::VisitExit( const TiXmlElement &element ) {
 	return true;
 }
 
+#endif // X3DRENDERER_ENABLED

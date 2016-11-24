@@ -28,6 +28,7 @@
 #endif
 
 #include <GLFW/glfw3.h>
+#include <utVision/OpenCLManager.h>
 
 #include "RenderModule.h"
 #include "tools.h"
@@ -77,7 +78,33 @@ log4cpp::Category& loggerEvents( log4cpp::Category::getInstance( "Ubitrack.Event
 #include <iomanip>
 #include <math.h>
 
-#include "utVisualization/RenderAPI/utRenderAPI.h"
+
+
+#ifdef _WIN32
+#include <GL/gl.h>
+    #include <GL/glu.h>
+    #include <utUtil/CleanWindows.h>
+#elif __APPLE__
+#include <OpenGL/OpenGL.h>
+#include <OpenGL/glu.h>
+#else
+#include <GL/gl.h>
+    #include <GL/glu.h>
+    #include <GL/glx.h>
+#endif
+
+
+//OCL
+#ifdef HAVE_OPENCL
+#include <opencv2/core/ocl.hpp>
+#ifdef __APPLE__
+#include "OpenCL/cl_gl.h"
+#else
+#include "CL/cl_gl.h"
+#endif
+#endif
+
+#include "utVisualization/utRenderAPI.h"
 
 
 namespace Ubitrack { namespace Drivers {
@@ -173,6 +200,7 @@ int VirtualCamera::setup()
 
 	// setup is done in the CameraHandle setup method.
 
+	m_isSetupComplete = true;
 	return 1;
 }
 
@@ -216,6 +244,9 @@ void VirtualCamera::redraw( )
 
 }
 
+bool VirtualCamera::isSetupComplete() {
+	return m_isSetupComplete;
+}
 
 VirtualCamera::VirtualCamera( const VirtualCameraKey& key, boost::shared_ptr< Graph::UTQLSubgraph >, FactoryHelper* pFactory )
 	: Module< VirtualCameraKey, VirtualObjectKey, VirtualCamera, VirtualObject >( key, pFactory )
@@ -450,9 +481,10 @@ boost::shared_ptr< VirtualObject > VirtualCamera::createComponent( const std::st
 	
 	//if ( type == "Transparency" )
 	//	return boost::shared_ptr< VirtualObject >( new Transparency( name, pConfig, key, pModule ) );
-	if ( type == "X3DObject" )
-		return boost::shared_ptr< VirtualObject >( new X3DObject( name, pConfig, key, pModule ) );
-	else if ( type == "VectorfieldViewer" )
+//	if ( type == "X3DObject" )
+//		return boost::shared_ptr< VirtualObject >( new X3DObject( name, pConfig, key, pModule ) );
+//	else
+	if ( type == "VectorfieldViewer" )
 		return boost::shared_ptr< VirtualObject >( new VectorfieldViewer( name, pConfig, key, pModule ) );
 	else if ( type == "AntiMarker" )
 		return boost::shared_ptr< VirtualObject >( new AntiMarker( name, pConfig, key, pModule ) );
@@ -515,7 +547,7 @@ UBITRACK_REGISTER_COMPONENT( ComponentFactory* const cf )
 {
 	std::vector< std::string > renderComponents;
 	//renderComponents.push_back( "Transparency" );
-	renderComponents.push_back( "X3DObject" );
+//	renderComponents.push_back( "X3DObject" );
 	renderComponents.push_back( "VectorfieldViewer" );
 	renderComponents.push_back( "AntiMarker" );
 	renderComponents.push_back( "PointCloud" );

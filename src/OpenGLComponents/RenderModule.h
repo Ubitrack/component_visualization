@@ -106,6 +106,14 @@
 
 #include "VideoSync.h"
 
+//opencl context
+#ifdef HAVE_OPENCL
+#ifdef __APPLE__
+#include "OpenCL/opencl.h"
+#else
+#include "CL/cl.h"
+#endif
+#endif
 
 
 using namespace Ubitrack::Dataflow;
@@ -278,7 +286,10 @@ public:
 
 	/** redraw GL context, called from main GL thread _only_ */
 	void redraw();
-	
+
+	/** isSetupComplete ? **/
+	bool isSetupComplete();
+
 	/** create new components. Necessary to support multiple component types. */
 	boost::shared_ptr< VirtualObject > createComponent( const std::string& type, const std::string& name, 
 		boost::shared_ptr< Graph::UTQLSubgraph > pConfig, const VirtualObjectKey& key, VirtualCamera* pModule );
@@ -309,6 +320,8 @@ protected:
 
 	static int m_window;
 	VirtualCameraPrivate* m_camera_private;
+
+	bool m_isSetupComplete;
 
 };
 

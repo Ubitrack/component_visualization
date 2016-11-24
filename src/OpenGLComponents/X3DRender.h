@@ -13,6 +13,14 @@
 #include "Triple.h"
 
 
+#ifdef __APPLE__
+	#include <OpenGL/OpenGL.h>
+#else
+	#include <GL/gl.h>			// Header File For The OpenGL32 Library
+	#include <GL/glu.h>			// Header File For The GLu32 Library
+#endif
+
+
 class X3DRender: public TiXmlVisitor {
 
 public: X3DRender() : finish(), indices(), vertices(), normals(), texindex(), texcoord(), lists(), textures(), objects(), pass(0)

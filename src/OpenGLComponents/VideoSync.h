@@ -34,7 +34,7 @@
 	#include <GL/glu.h>
 	#include <utUtil/CleanWindows.h>
 #elif __APPLE__
-	#include <OpenGL/gl3.h>
+	#include <OpenGL/OpenGL.h>
 	#include <OpenGL/glu.h>
 #else
 	#include <GL/gl.h>
