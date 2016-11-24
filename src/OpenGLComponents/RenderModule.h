@@ -106,14 +106,7 @@
 
 #include "VideoSync.h"
 
-//opencl context
-#ifdef HAVE_OPENCL
-#ifdef __APPLE__
-    #include "OpenCL/opencl.h"
-#else
-    #include "CL/cl.h"
-#endif
-#endif
+
 
 using namespace Ubitrack::Dataflow;
 
@@ -237,6 +230,8 @@ class VirtualObjectKey
 };
 
 
+struct VirtualCameraPrivate;
+
 /**
  * @ingroup driver_components
  * Module for virtual OpenGL camera.
@@ -257,7 +252,7 @@ public:
 	/** Destructor */
 	~VirtualCamera();
 
-	/** GLUT keyboard callback */
+	/** keyboard callback */
 	void keyboard( unsigned char key, int x, int y );
 
 	/** button output helper function */
@@ -266,11 +261,11 @@ public:
 	/** button output helper function */
 	Math::Vector< double, 2 > getLastMousePos();
 
-	/** GLUT reshape callback */
+	/** reshape callback */
 	void reshape( int w, int h );
 
-	/** GLUT display callback */
-	void display();
+	/** display callback */
+	void display(int ellapsed_time);
 
 	/** callback from the VirtualObjects if world has changed */
 	void invalidate( VirtualObject* caller = 0 );
@@ -283,9 +278,6 @@ public:
 
 	/** redraw GL context, called from main GL thread _only_ */
 	void redraw();
-
-	/** isSetupComplete ? **/
-	bool isSetupComplete();
 	
 	/** create new components. Necessary to support multiple component types. */
 	boost::shared_ptr< VirtualObject > createComponent( const std::string& type, const std::string& name, 
@@ -303,7 +295,6 @@ public:
 	void setStereoRenderPasses( StereoRenderPasses srp )
 	{ m_stereoRenderPasses = srp; }
 
-
 protected:
 
 	int m_winHandle, m_redraw, m_doSync, m_parity, m_info, m_lasttime, m_lastframe;
@@ -316,7 +307,8 @@ protected:
 	
 	StereoRenderPasses m_stereoRenderPasses;
 
-	bool m_isSetupComplete;
+	static int m_window;
+	VirtualCameraPrivate* m_camera_private;
 
 };
 

@@ -27,10 +27,10 @@
 	#include "GL/glew.h"
 #endif
 
-#include "GL/freeglut.h"
-#include <utVision/OpenCLManager.h>
+#include <GLFW/glfw3.h>
 
 #include "RenderModule.h"
+#include "tools.h"
 
 log4cpp::Category& logger( log4cpp::Category::getInstance( "Drivers.Render" ) );
 log4cpp::Category& loggerEvents( log4cpp::Category::getInstance( "Ubitrack.Events.Drivers.Render" ) );
@@ -72,347 +72,135 @@ log4cpp::Category& loggerEvents( log4cpp::Category::getInstance( "Ubitrack.Event
 #include <utUtil/Exception.h>
 #include <utUtil/OS.h>
 #include <boost/scoped_ptr.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
 #include <iomanip>
 #include <math.h>
 
-//OCL
-#ifdef HAVE_OPENCL
-#include <opencv2/core/ocl.hpp>
-#ifdef __APPLE__
-    #include "OpenCL/cl_gl.h"
-#else
-    #include "CL/cl_gl.h"
-#endif
-#endif
-#include <GL/glut.h>
+#include "utVisualization/RenderAPI/utRenderAPI.h"
+
 
 namespace Ubitrack { namespace Drivers {
 
 using namespace Dataflow;
+using namespace Visualization;
 
 
-// some unavoidable globals to manage the GLUT main loop and its handlers
-std::deque< VirtualCamera* > g_setup;
-std::map< std::string, int > g_names;
-std::map< int, VirtualCamera* > g_modules;
-std::set< VirtualObject* > g_cleanup_components;
-boost::scoped_ptr< boost::thread > g_glutThread;
-boost::mutex g_globalMutex;
-boost::condition g_setup_performed;
-boost::condition g_continue;
-boost::condition g_cleanup_done;
-#ifdef __APPLE__
-	bool g_glutInitialized = false;
-#endif
+class CameraHandleImpl : public CameraHandle {
 
-int g_run = 1;
-
-// fake command line for GLUT (yes, the library _is_ 10 years old)
-int   g_argc   = 1;
-char* g_argv[] = { "VirtualCamera", 0 };
-
-// callback definitions
-void g_display();
-void g_keyboard( unsigned char key, int x, int y );
-void g_reshape( int w, int h );
-
-void g_mainloop()
-{
-	LOG4CPP_DEBUG( logger, "g_mainloop(): Render thread started" );
-
-	boost::mutex::scoped_lock lock( g_globalMutex );
-
-#ifdef __APPLE__
-	if ( !g_glutInitialized )
-	{	
-		g_glutInitialized = true;
-#else
-	if ( !glutGet(GLUT_INIT_STATE) )
+public:
+	CameraHandleImpl(std::string& _name, int _width, int _height, VirtualCamera* _handle)
+	: CameraHandle(_name, _width, _height, _handle)
+	, m_last_xpos( 0. )
+	, m_last_ypos( 0. )
 	{
-#endif
-		glutInit( &g_argc, g_argv );
-
-		glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
-		glutSetOption( GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION );
-
 	}
 
-	while (g_run)
+	~CameraHandleImpl()
 	{
-		// are there any setup functions pending?
-		if ( g_setup.size() > 0 ) {
-			LOG4CPP_DEBUG( logger, "g_mainloop(): Calling setup()..." );
-
-			// try to setup the first window in the queue
-			VirtualCamera* tmp = g_setup.front(); 
-			g_setup.pop_front();
-			// if this failed, push it to the end of the queue
-			if ( !(tmp->setup()) ) {
-				g_setup.push_back( tmp );
-				LOG4CPP_DEBUG( logger, "g_mainloop(): setup() failed, scheduling component to be set up again..." );
-			}
-			else {
-				LOG4CPP_DEBUG( logger, "g_mainloop(): setup() successful" );
-			}
-			
-			// let GLUT do its thing..
-			glutMainLoopEvent();
-			if ( g_setup.size() == 0 )
-			{
-				LOG4CPP_DEBUG( logger, "g_mainloop(): setup() all setup() activities performed" );
-				g_setup_performed.notify_all();
-			}
-		}
-
-		// are there any component cleanup functions pending?
-		if ( ! g_cleanup_components.empty() ) 
-		{
-			LOG4CPP_DEBUG( logger, "g_mainloop(): Cleaning up GL context of all pending components..." );
-			while ( ! g_cleanup_components.empty() )
-			{
-				VirtualObject * voPtr = *(g_cleanup_components.begin());
-				voPtr->glCleanup();
-				g_cleanup_components.erase( voPtr );
-
-				// let GLUT do its thing..
-				glutMainLoopEvent();
-			}
-			g_cleanup_done.notify_all();
-			LOG4CPP_DEBUG( logger, "g_mainloop(): Cleaning done" );
-		}
-		
-		// check
-		// - if a redraw is needed for any window
-		// - if any windows have been deleted
-
-		std::map< int,VirtualCamera* >::iterator pos = g_modules.begin();
-		std::map< int,VirtualCamera* >::iterator end = g_modules.end();
-
-		while ( pos != end )
-		{
-			LOG4CPP_TRACE( logger, "g_mainloop(): iterating module with key '" << pos->first << "'..." );
-		
-			if ( pos->second )
-			{
-				LOG4CPP_TRACE( logger, "g_mainloop(): Call redraw()" );
-			
-				pos->second->redraw();
-				pos++;
-			} 
-			else 
-			{
-				LOG4CPP_DEBUG( logger, "g_mainloop(): Destroying GL window with handle " << pos->first << "..." );
-
-				glutDestroyWindow( pos->first );
-				g_modules.erase( pos++ );
-
-				// let GLUT do its thing..
-				glutMainLoopEvent();
-
-				LOG4CPP_DEBUG( logger, "g_mainloop(): GL window destroyed, " << g_modules.size() << " modules remaining" );
-
-				// quit thread when last module is destroyed
-				if ( g_modules.empty() )
-				{
-					glutMainLoopEvent();
-					LOG4CPP_DEBUG( logger, "g_mainloop(): Render thread stopped" );
-					return;
-				}
-			}
-		}	
-
-		// let GLUT do its thing..
-		glutMainLoopEvent();
-
-		// Be nice to the rest of the system. g_glutThread->yield() doesn't have any noticeable effect
-		// with timeslices of the size that is common today. 5 ms maxes the frame rate at 200 Hz, but 
-		// that should be sufficient for most kinds of hardware.
-		// FIXME: probably needs to be increased to at least 60 Hz again for frame-sequential stereo
-		// Can this only be done when stereo is actually used? Otherwise this will be a waste of processing time.(DP)
-		g_continue.timed_wait( lock, boost::posix_time::milliseconds(100) );
-		
-		LOG4CPP_TRACE( logger, "g_mainloop(): timed_wait finished" );
 	}
-}
 
+	virtual bool setup(boost::shared_ptr<VirtualWindow>& window) {
+		bool ret = CameraHandle::setup(window);
+		if (m_pVirtualCamera != NULL) {
+			VirtualCamera::ComponentList objects = m_pVirtualCamera->getAllComponents();
+			for ( VirtualCamera::ComponentList::iterator i = objects.begin(); i != objects.end(); i++ ) {
+				(*i)->glInit();
+			}
+		}
+		return ret;
+	}
 
-void g_display()
-{
-	LOG4CPP_DEBUG( logger, "g_display()" );
-	VirtualCamera* win = g_modules[ glutGetWindow() ];
-	if ( win ) win->display();
-}
+	virtual void teardown() {
+		if (m_pVirtualCamera != NULL) {
+			VirtualCamera::ComponentList objects = m_pVirtualCamera->getAllComponents();
+			for ( VirtualCamera::ComponentList::iterator i = objects.begin(); i != objects.end(); i++ ) {
+				(*i)->glCleanup();
+			}
+		}
+		CameraHandle::teardown();
+	}
 
+	virtual void render(int ellapsed_time) {
+		if (m_pVirtualCamera != NULL) {
+			m_pVirtualCamera->display(ellapsed_time);
+		}
+	}
 
-void g_keyboard( unsigned char key, int x, int y )
-{
-	LOG4CPP_DEBUG( logger, "g_keyboard()" );
-	VirtualCamera* win = g_modules[ glutGetWindow() ];
-	if ( win ) win->keyboard( key, x, y );
-}
+	virtual void on_keypress(int key, int scancode, int action, int mods) {
+		if (m_pVirtualCamera != NULL) {
+			m_pVirtualCamera->keyboard((unsigned char) key, (int) m_last_xpos, (int) m_last_ypos);
+		}
+	}
 
+	virtual void on_render(int ellapsed_time) {
+		if (m_pVirtualCamera != NULL) {
+//			m_pVirtualCamera->display(ellapsed_time);
+		}
+	}
 
-void g_reshape( int w, int h )
-{
-	LOG4CPP_DEBUG( logger, "g_reshape()" );
-	VirtualCamera* win = g_modules[ glutGetWindow() ];
-	if ( win ) win->reshape( w, h );
-}
+	virtual void on_cursorpos(double xpos, double ypos) {
+		m_last_xpos = xpos;
+		m_last_ypos = ypos;
+	}
+
+private:
+	double m_last_xpos, m_last_ypos;
+
+};
+
 
 
 
 int VirtualCamera::setup()
 {
-	LOG4CPP_DEBUG( logger, "setup(): Starting setup of window for module key " << m_moduleKey );
 
 
-	// enable stencil buffer?
-	if ( m_moduleKey.m_bEnableStencil ) {
-		glutInitDisplayMode( GLUT_DEPTH | GLUT_RGB | GLUT_DOUBLE | GLUT_STENCIL );
-	}
-
-	if ( !m_moduleKey.m_sGameMode.empty() )
-	{
-		glutGameModeString( m_moduleKey.m_sGameMode.c_str() );
-		m_winHandle = glutEnterGameMode();
-	}
-	else if ( m_moduleKey.substr(0,3) == "Sub" ) 
-	{
-		// sub-window -> check if the parent has already been created
-		std::string parent = m_moduleKey.substr(3);
-		if (g_names.find( parent ) == g_names.end()) return 0;
-		// parent is there, so create the subwindow
-		m_winHandle = glutCreateSubWindow( g_names[parent], 0, 0, m_width, m_height );
-	}
-	else 
-	{
-		// create new top level window,
-		glutInitWindowSize( m_width, m_height );
-		m_winHandle = glutCreateWindow( m_moduleKey.c_str() );
-	}
-
-    LOG4CPP_DEBUG( logger, "setup(): Window handle is " << m_winHandle );
-
-	// store this-pointer and window handle
-	g_modules[ m_winHandle ] = this;
-	g_names[ m_moduleKey ] = m_winHandle;
-	
-	LOG4CPP_DEBUG( logger, "setup(): module '" << this->m_moduleKey << "' with key '" << m_winHandle << "' added to list" );
-
+/** FULLSCREEN NOT MIGRATED .
 	// make full screen?
-	if ( m_moduleKey.m_bFullscreen )
-		#ifdef	_WIN32
-			{
-			Math::Vector< int, 2 > newSize = makeWindowFullscreen( m_moduleKey, m_moduleKey.m_monitorPoint );
-			m_width = newSize( 0 );
-			m_height = newSize( 1 );
-			}
-		#else
-			glutFullScreen();
-		#endif
-	
-	// GLEW provides access to OpenGL extensions
-	#ifdef HAVE_GLEW
-		glewInit();
-	#endif
+	if ( m_moduleKey.m_bFullscreen ) {
+#ifdef    _WIN32
+		Math::Vector< int, 2 > newSize = makeWindowFullscreen( m_moduleKey, m_moduleKey.m_monitorPoint );
+		m_width = newSize( 0 );
+		m_height = newSize( 1 );
+#else
+		//glutFullScreen();
+		// glfw supports screen-size windows: http://www.glfw.org/docs/latest/window.html#window_windowed_full_screen
+#endif
+	}
 
-	// GL: enable and set colors
-	glEnable( GL_COLOR_MATERIAL );
-	glClearColor( 0.0, 0.0, 0.0, 1.0 ); // TODO: make this configurable (but black is best for optical see-through ar!)
+**/
 
-	// GL: enable and set depth parameters
-	glEnable( GL_DEPTH_TEST );
-	glClearDepth( 1.0 );
+	// setup is done in the CameraHandle setup method.
 
-	// GL: disable backface culling
-	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-	glDisable( GL_CULL_FACE );
-
-	// GL: light parameters
-	GLfloat light_pos[] = { 1.0f, 1.0f, 1.0f, 0.0f };
-	GLfloat light_amb[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-	GLfloat light_dif[] = { 0.9f, 0.9f, 0.9f, 1.0f };
-
-	// GL: enable lighting
-	glLightfv( GL_LIGHT0, GL_POSITION, light_pos );
-	glLightfv( GL_LIGHT0, GL_AMBIENT,  light_amb );
-	glLightfv( GL_LIGHT0, GL_DIFFUSE,  light_dif );
-	glEnable( GL_LIGHTING );
-	glEnable( GL_LIGHT0 );
-
-	// GL: bitmap handling
-	glPixelStorei( GL_PACK_ALIGNMENT,   1 );
-	glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
-
-	// GL: alpha blending
-	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-	glEnable( GL_BLEND );
-
-	// GL: misc stuff
-	glShadeModel( GL_SMOOTH );
-	glEnable( GL_NORMALIZE );
-
-	// make functions known to GLUT
-	glutKeyboardFunc( g_keyboard );
-	glutDisplayFunc ( g_display  );
-	glutReshapeFunc ( g_reshape  );
-
-
-	Ubitrack::Vision::OpenCLManager& oclManager = Ubitrack::Vision::OpenCLManager::singleton();
-
-	ComponentList objects = getAllComponents();
-	for ( ComponentList::iterator i = objects.begin(); i != objects.end(); i++ )
-	{
-        (*i)->glInit();
-    }
-
-	m_isSetupComplete = true;
 	return 1;
 }
 
+
 void VirtualCamera::invalidate( VirtualObject* caller )
 {
-	if (m_redraw) return;
+//	if (m_redraw) return;
 	// check if this is the last incoming update of several concurrent ones
 	ComponentList objects = getAllComponents();
 	for ( ComponentList::iterator i = objects.begin(); i != objects.end(); i++ ) {
 		if ((*i).get() == caller) continue;
 		if ((*i)->hasWaitingEvents()) return;
 	}
-	m_redraw = 1;
+//	m_redraw = 1;
 	LOG4CPP_DEBUG( logger, "invalidate(): Waking up main thread" );
-	g_continue.notify_all();
+	RenderManager::singleton().notify_ready();
 }
 
 
 /** Cleans up the specified component, blocks until the job has been completed on the GL task */
 void VirtualCamera::cleanup( VirtualObject* vo )
 {
-	LOG4CPP_DEBUG( logger, "cleanup(): Lock mutex" );
 
-	// Scoped lock
-	boost::mutex::scoped_lock l( g_globalMutex );
-	m_isSetupComplete = false;
+	// this method is called from the VirtualCameraModule in order to signal that it's done
+	// for now, all components are cleaned in the teardown of the VirtualCamera
 
-	// Enqueue component for cleanup of GL context
-	g_cleanup_components.insert( vo );
-
-	LOG4CPP_DEBUG( logger, "cleanup(): Waking up GL thread" );
-
-	// Wake up GL thread and wait until cleanup is done
-	g_continue.notify_all();
-	while ( g_cleanup_components.find( vo ) != g_cleanup_components.end() )
-	{
-		LOG4CPP_DEBUG( logger, "cleanup(): Block until GL context of component has been cleaned up" );
-
-		// This will unlock the lock until wait returns so that the GL task my acquire the lock...
-		g_cleanup_done.timed_wait ( l, boost::posix_time::milliseconds (25) );
-
-		LOG4CPP_TRACE( logger, "cleanup(): Next trial, yet unprocessed components: " << g_cleanup_components.size() );
-	}
-
-	LOG4CPP_DEBUG( logger, "cleanup(): Cleanup of component's GL context done" );
+	// dynamic deregistration only makes sense, if dynamic registration works,
+	// but this seems not to be the case for the existing GLUT implementation
 }
 
 
@@ -421,15 +209,13 @@ void VirtualCamera::redraw( )
 	// TODO: fix stereo view handling
 	// TODO: make minmum fps configureable (currently 2fps)
 	if ((!m_redraw) && (m_stereoRenderPasses == stereoRenderNone && m_lastRedrawTime + 500000000L < Measurement::now()  )) return; 
-	glutSetWindow( m_winHandle );
-	LOG4CPP_TRACE( logger, "redraw(): calling glutPostRedisplay" );
-	glutPostRedisplay();
+//	glutSetWindow( m_winHandle );
+//	LOG4CPP_TRACE( logger, "render(): calling glutPostRedisplay" );
+//	glutPostRedisplay();
 	m_redraw = 0;
+
 }
 
-bool VirtualCamera::isSetupComplete() {
-	return m_isSetupComplete;
-}
 
 VirtualCamera::VirtualCamera( const VirtualCameraKey& key, boost::shared_ptr< Graph::UTQLSubgraph >, FactoryHelper* pFactory )
 	: Module< VirtualCameraKey, VirtualObjectKey, VirtualCamera, VirtualObject >( key, pFactory )
@@ -448,75 +234,26 @@ VirtualCamera::VirtualCamera( const VirtualCameraKey& key, boost::shared_ptr< Gr
 	, m_lastRedrawTime(0)
 	, m_vsync()
 	, m_stereoRenderPasses( stereoRenderNone )
-	, m_isSetupComplete(false)
+	, m_camera_private( NULL )
 {
 	LOG4CPP_DEBUG( logger, "VirtualCamera(): Creating module for module key '" << m_moduleKey << "'...");
+	std::string window_name(m_moduleKey.c_str());
 
-	// lock access to globals
-	boost::mutex::scoped_lock l( g_globalMutex );
-
-	LOG4CPP_DEBUG( logger, "VirtualCamera(): Access to virtual camera map acquired");
-
-	// schedule the setup function for this window
-	g_setup.push_back( this );
-
-	// if there's no thread yet, init GLUT library first and create a new control thread
-	// Note: this thread must do ALL OpenGL operations for all VirtualCameras!
-	// Most GL implementation do not look kindly on context sharing between threads!
-	if ( g_glutThread.get() == 0 ) {
-		LOG4CPP_DEBUG( logger, "VirtualCamera(): Creating single GL thread...");
-
-		g_glutThread.reset( new boost::thread( boost::bind( g_mainloop ) ) );
-
-		LOG4CPP_DEBUG( logger, "VirtualCamera(): Single GL thread created");
-	}
+	// XXX can this be simplified ??
+	boost::shared_ptr<CameraHandleImpl> cam( new CameraHandleImpl(window_name, m_width, m_height, this));
+	boost::shared_ptr<CameraHandle> cam_ = boost::dynamic_pointer_cast<CameraHandle>(cam);
+	m_winHandle = RenderManager::singleton().register_camera(cam_);
 }
 
 
 VirtualCamera::~VirtualCamera()
 {
-	bool bKillThread = false;
 
 	LOG4CPP_DEBUG( logger, "~VirtualCamera(): Destroying module for module key '" << m_moduleKey << "'...");
-	
-	{
-		// lock access to globals and remove the stored this-pointer
-		boost::mutex::scoped_lock lock( g_globalMutex );
-		
-		LOG4CPP_DEBUG( logger, "~VirtualCamera(): Access to virtual camera map acquired, destroying window with handle '" << m_winHandle << "'");
-		
-		/* 
-		 * Ensure that all pending setup() activities are executed first. This is necessary for example during component 
-		 * creation when all constructors are called sequentially and some component throws an exception so that the data flow
-		 * management instance stops calling constructors and starts calling destructors.
-		 */
-		while ( ! g_setup.empty() ) 
-		{
-			LOG4CPP_DEBUG( logger, "~VirtualCamera(): waiting for scheduled setup() activities to terminate" );
-			
-			g_setup_performed.timed_wait( lock, boost::posix_time::milliseconds(100) );
-		}
-		
-		g_modules[ m_winHandle ] = 0;
-		g_names.erase( m_moduleKey );
 
-		// kill thread if this was the last window
-		if ( g_names.empty() ) {
-			bKillThread = true;
-		}
-	}
-
-	// the thread should die with the last render window
-	if ( bKillThread )
-	{
-		LOG4CPP_DEBUG( logger, "~VirtualCamera(): Waiting for render thread to stop..." );
-
-		g_glutThread->join();
-		boost::mutex::scoped_lock l( g_globalMutex );
-		g_glutThread.reset();
-
-		LOG4CPP_DEBUG( logger, "~VirtualCamera(): Render thread stopped" );
-	}
+	// need to remove ourselves from the render-manager
+	RenderManager::singleton().unregister_camera(m_winHandle);
+	// more cleanup needed ?
 
 	LOG4CPP_DEBUG( logger, "~VirtualCamera(): module destroyed" );
 }
@@ -525,7 +262,8 @@ VirtualCamera::~VirtualCamera()
 void VirtualCamera::keyboard( unsigned char key, int x, int y )
 {
 	LOG4CPP_DEBUG( logger, "keyboard(): " << key << ", " << x << ", " << y );
-	
+
+	/** accessing the alt-modifier needs a change in the function signature.
 	if (glutGetModifiers() & GLUT_ACTIVE_ALT)
 	{
 		switch ( key )
@@ -535,7 +273,7 @@ void VirtualCamera::keyboard( unsigned char key, int x, int y )
 					// need to work around freeglut for multi-monitor fullscreen
 					makeWindowFullscreen( m_moduleKey, Math::Vector< int, 2 >( 0xFFFF, 0xFFFF ) );
 				#else
-					glutFullScreen();
+//					glutFullScreen();
 				#endif
 				break;
 			case 'i': m_info = !m_info; break;
@@ -545,6 +283,7 @@ void VirtualCamera::keyboard( unsigned char key, int x, int y )
 		}
 	}
 	else
+	**/
 	{
 		m_lastKey = key;
 		if ( x < 0 || y < 0 || x > m_width || y > m_height )
@@ -552,7 +291,7 @@ void VirtualCamera::keyboard( unsigned char key, int x, int y )
 		else
 			m_lastMousePos = Math::Vector< double, 2 >( double( x ) / m_width, double( y ) / m_height );
 	}
-	glutPostRedisplay();
+//	glutPostRedisplay();
 }
 
 
@@ -570,7 +309,7 @@ Math::Vector< double, 2 > VirtualCamera::getLastMousePos() {
 
 
 
-void VirtualCamera::display()
+void VirtualCamera::display(int ellapsed_time)
 {
 	m_lastRedrawTime = Measurement::now();
 
@@ -601,12 +340,13 @@ void VirtualCamera::display()
 	glLoadIdentity();
 
 	// calculate fps
-	int curtime = glutGet( GLUT_ELAPSED_TIME );
+	int curtime = (int)(ellapsed_time);
 	if ((curtime - m_lasttime) >= 1000) {
 		m_fps = (1000.0*(curframe-m_lastframe))/((double)(curtime-m_lasttime));
 		m_lasttime  = curtime;
 		m_lastframe = curframe;
 	}
+
 
 	LOG4CPP_TRACE( logger, "display(): Redrawing.." );
 
@@ -670,8 +410,9 @@ void VirtualCamera::display()
 		glColor4f( 1.0, 0.0, 0.0, 1.0 );
 		glRasterPos2i( 10, m_height-23 );
 
-		for ( unsigned int i = 0; i < text.str().length(); i++ )
-			glutBitmapCharacter( GLUT_BITMAP_8_BY_13, text.str()[i] );
+		drawString( text.str() );
+//		for ( unsigned int i = 0; i < text.str().length(); i++ )
+//			glutBitmapCharacter( GLUT_BITMAP_8_BY_13, text.str()[i] );
 
 		glPixelZoom( xzoom, yzoom );
 
@@ -680,11 +421,9 @@ void VirtualCamera::display()
 	}
 
 	// wait for the screen refresh
+
+	// XXX commented out for now .. maybe needs extra api
 	m_vsync.wait( m_doSync );
-	
-	// put current buffer into display
-	LOG4CPP_TRACE( logger, "display(): Swapping buffers.." );
-	glutSwapBuffers();
 }
 
 
@@ -700,7 +439,7 @@ void VirtualCamera::reshape( int w, int h )
 	glViewport( 0, 0, m_width, m_height );
 
 	// invalidate display
-	glutPostRedisplay();
+//	glutPostRedisplay();
 }
 
 
