@@ -32,10 +32,9 @@
 
 #ifdef __APPLE__
 	#include <OpenGL/OpenGL.h>
-	#include <GLUT/glut.h>
 #else
-        #include <GL/gl.h>			// Header File For The OpenGL32 Library
-        #include <GL/glu.h>			// Header File For The GLu32 Library
+	#include <GL/gl.h>			// Header File For The OpenGL32 Library
+	#include <GL/glu.h>			// Header File For The GLu32 Library
 #endif
 
 

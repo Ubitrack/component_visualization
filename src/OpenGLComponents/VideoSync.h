@@ -29,14 +29,16 @@
  * @author Florian Echtler <echtler@in.tum.de>
  */
 
-#include "GL/freeglut.h"
-
 #ifdef _WIN32
+	#include <GL/gl.h>
+	#include <GL/glu.h>
 	#include <utUtil/CleanWindows.h>
 #elif __APPLE__
-	#include <OpenGL/OpenGL.h>
-	#include <GLUT/glut.h>
+	#include <OpenGL/gl3.h>
+	#include <OpenGL/glu.h>
 #else
+	#include <GL/gl.h>
+	#include <GL/glu.h>
 	#include <GL/glx.h>
 #endif
 

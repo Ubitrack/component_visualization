@@ -45,14 +45,14 @@ GLfloat unproject(int screen_x, int screen_y, Vector* click, Vector* origin, GLf
 }
 
 
-void glutTexturedSphere( GLdouble radius, GLint slices, GLint stacks ) {
+void drawTexturedSphere( GLdouble radius, GLint slices, GLint stacks ) {
 	GLUquadricObj* tmp = gluNewQuadric();
 	gluQuadricTexture( tmp, GL_TRUE );
 	gluSphere( tmp, radius, slices, stacks );
 	gluDeleteQuadric( tmp );
 }
 
-void glutTexturedCone( GLdouble base, GLdouble height, GLint slices, GLint stacks ) {
+void drawTexturedCone( GLdouble base, GLdouble height, GLint slices, GLint stacks ) {
 	GLUquadricObj* tmp = gluNewQuadric();
 	gluQuadricTexture( tmp, GL_TRUE );
 	gluQuadricOrientation ( tmp, GLU_OUTSIDE );
@@ -65,7 +65,7 @@ void glutTexturedCone( GLdouble base, GLdouble height, GLint slices, GLint stack
 	gluDeleteQuadric( tmp );
 }
 
-void glutTexturedCylinder( GLdouble radius, GLdouble height, GLint slices, GLint stacks ) {
+void drawTexturedCylinder( GLdouble radius, GLdouble height, GLint slices, GLint stacks ) {
 	GLUquadricObj* tmp = gluNewQuadric();
 	gluQuadricTexture( tmp, GL_TRUE );
 	gluQuadricOrientation ( tmp, GLU_OUTSIDE );
@@ -78,7 +78,7 @@ void glutTexturedCylinder( GLdouble radius, GLdouble height, GLint slices, GLint
 	gluDeleteQuadric( tmp );
 }
 
-void glutTexturedBox( GLdouble x, GLdouble y, GLdouble z ) {
+void drawTexturedBox( GLdouble x, GLdouble y, GLdouble z ) {
 
 	x = x/2.0;
 	y = y/2.0;
@@ -122,12 +122,20 @@ void glutTexturedBox( GLdouble x, GLdouble y, GLdouble z ) {
 	glEnd();
 }
 
-void glutPrint( std::string text ) {
+void drawWireCone(GLdouble base, GLdouble height, GLint slices, GLint stacks) {
+//	glutWireCone( base, height, slices, stacks);
+	std::cout << "tools.cpp GLUT FUNCTION DISABLED glutWireCone( base, height, slices, stacks)" << std::endl;
+}
+
+
+void drawString( std::string text ) {
 	glScaled( 0.01, 0.01, 0.01 );
 	glLineWidth( 2.0 );
 	//glEnable( GL_LINE_SMOOTH );
-	for ( const char* tmp = text.c_str(); *tmp; tmp++ )
-		glutStrokeCharacter( GLUT_STROKE_ROMAN, *tmp );
+	for ( const char* tmp = text.c_str(); *tmp; tmp++ ) {
+//		glutStrokeCharacter( GLUT_STROKE_ROMAN, *tmp );
+		std::cout << "tools.cpp GLUT FUNCTION DISABLED glutStrokeCharacter( GLUT_STROKE_ROMAN, '" << *tmp << "' )" << std::endl;
+	}
 }
 
 

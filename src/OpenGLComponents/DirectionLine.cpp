@@ -26,6 +26,7 @@
 #endif
 
 #include "DirectionLine.h"
+#include "tools.h"
 
 namespace Ubitrack { namespace Drivers {
 
@@ -74,7 +75,7 @@ void DirectionLine::draw( Measurement::Timestamp& t, int parity )
 	glLineWidth( (float)m_thickness );
 
 	// TODO Dummy cone, if not rendered, the color of the line below will be wrong!
-	glutWireCone( 1.0, 1.0, 1, 1 );
+	drawWireCone( 1.0, 1.0, 1, 1 );
 
 	glColor4f( (float)m_rgba[0], (float)m_rgba[1], (float)m_rgba[2], (float)m_rgba[3] );
 	glLineStipple ( 1, 0x0F0F );

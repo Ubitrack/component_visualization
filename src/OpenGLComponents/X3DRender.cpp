@@ -9,7 +9,7 @@
 		#define BOOST_BIND_ENABLE_STDCALL
 	}	
 	#endif		
-	#ifndef _WIN64
+	#ifndef WIN64
 		#define BOOST_BIND_ENABLE_STDCALL
 	#endif
 #endif
@@ -199,7 +199,7 @@ bool X3DRender::VisitEnter( const TiXmlElement &element, const TiXmlAttribute* a
 		std::string text;
 		for ( ; attrib; attrib = attrib->Next() )
 			parseAttribute( attrib, "string", &text );
-		finish[parent].push_back( boost::bind( glutPrint, text ) );
+		finish[parent].push_back( boost::bind( drawString, text ) );
 		return true;
 	}
 
@@ -297,7 +297,7 @@ bool X3DRender::VisitEnter( const TiXmlElement &element, const TiXmlAttribute* a
 		for ( ; attrib; attrib = attrib->Next() ) {
 			parseAttribute( attrib, "radius", &radius );
 		}
-		finish[parent].push_back( boost::bind( glutTexturedSphere, radius, 10, 10 ) );
+		finish[parent].push_back( boost::bind( drawTexturedSphere, radius, 10, 10 ) );
 		return true;
 	}
 
@@ -306,8 +306,8 @@ bool X3DRender::VisitEnter( const TiXmlElement &element, const TiXmlAttribute* a
 		for ( ; attrib; attrib = attrib->Next() ) {
 			parseAttribute( attrib, "size", &x, &y, &z );
 		}
-		//finish[parent].push_back( boost::bind( glutTexturedBox, x, -z, y ) );
-		finish[parent].push_back( boost::bind( glutTexturedBox, x, y, z ) );
+		//finish[parent].push_back( boost::bind( drawTexturedBox, x, -z, y ) );
+		finish[parent].push_back( boost::bind( drawTexturedBox, x, y, z ) );
 		return true;
 	}
 
@@ -320,7 +320,7 @@ bool X3DRender::VisitEnter( const TiXmlElement &element, const TiXmlAttribute* a
 		}
 		glRotated( -90, 1, 0, 0 );
 		glTranslated( 0, 0, -height/2 );
-		finish[parent].push_back( boost::bind( glutTexturedCylinder, radius, height, 15, 1 ) );
+		finish[parent].push_back( boost::bind( drawTexturedCylinder, radius, height, 15, 1 ) );
 		return true;
 	}
 
@@ -333,7 +333,7 @@ bool X3DRender::VisitEnter( const TiXmlElement &element, const TiXmlAttribute* a
 		}
 		glRotated( -90, 1, 0, 0 );
 		glTranslated( 0, 0, -height/2 );
-		finish[parent].push_back( boost::bind( glutTexturedCone, radius, height, 15, 1 ) );
+		finish[parent].push_back( boost::bind( drawTexturedCone, radius, height, 15, 1 ) );
 		return true;
 	}
 

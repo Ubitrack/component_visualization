@@ -1,7 +1,6 @@
 #ifndef AUX_H
 #define AUX_H
 
-#include <GL/freeglut.h>
 #include <tinyxml.h>
 
 #include <sstream>
@@ -24,12 +23,16 @@
 GLfloat unproject(int screen_x, int screen_y, Vector* click, Vector* origin, GLfloat screen_z = -1.0);
 
 
-void glutTexturedSphere( GLdouble radius, GLint slices, GLint stacks );
-void glutTexturedCylinder( GLdouble radius, GLdouble height, GLint slices, GLint stacks );
-void glutTexturedCone( GLdouble base, GLdouble height, GLint slices, GLint stacks );
-void glutTexturedBox( GLdouble x, GLdouble y, GLdouble z );
+void drawTexturedSphere( GLdouble radius, GLint slices, GLint stacks );
+void drawTexturedCylinder( GLdouble radius, GLdouble height, GLint slices, GLint stacks );
+void drawTexturedCone( GLdouble base, GLdouble height, GLint slices, GLint stacks );
+void drawTexturedBox( GLdouble x, GLdouble y, GLdouble z );
 
-void glutPrint( std::string text ); 
+void drawWireCone(GLdouble base, GLdouble height, GLint slices, GLint stacks);
+
+void drawString( std::string text );
+
+
 
 void loadTexture( const char* url, bool repeatS, bool repeatT );
 

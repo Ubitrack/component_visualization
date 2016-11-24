@@ -30,6 +30,7 @@
  */
 
 #include "WorldFrame.h"
+#include "tools.h"
 
 namespace Ubitrack { namespace Drivers {	
 WorldFrame::WorldFrame( const std::string& name, boost::shared_ptr< Graph::UTQLSubgraph > subgraph,
@@ -99,7 +100,7 @@ void WorldFrame::draw3DContent( Measurement::Timestamp& t, int )
 	glPushMatrix();
 	glTranslatef((float)len,0.0,0.0f);
 	glRotatef(90.0f,0.0f,90.0f,0.0f);
-	glutWireCone((float)(m_size/CONE1),(float)(m_size/CONE2),10.0f,10.0f);
+	drawWireCone((float)(m_size/CONE1),(float)(m_size/CONE2),10.0f,10.0f);
 	glPopMatrix();
 
 	//y
@@ -112,7 +113,7 @@ void WorldFrame::draw3DContent( Measurement::Timestamp& t, int )
 	glPushMatrix();
 	glTranslatef(0.0f,(float)len,0.0f);
 	glRotatef(90.0f,-1.0f,0.0f,0.0f);
-	glutWireCone((float)(m_size/CONE1),(float)(m_size/CONE2),10.0f,10.0f);
+	drawWireCone((float)(m_size/CONE1),(float)(m_size/CONE2),10.0f,10.0f);
 	glPopMatrix();
 
 	//z
@@ -124,7 +125,7 @@ void WorldFrame::draw3DContent( Measurement::Timestamp& t, int )
 
 	glPushMatrix();
 	glTranslatef(0,0,(float)len);
-	glutWireCone(m_size/CONE1,m_size/CONE2,10,10);
+	drawWireCone(m_size/CONE1,m_size/CONE2,10,10);
 	glPopMatrix();
 
 	//draw the dash lines

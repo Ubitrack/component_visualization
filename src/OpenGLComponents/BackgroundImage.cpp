@@ -34,7 +34,6 @@
 #endif
 #endif
 
-#include <GL/glut.h>
 
 namespace Ubitrack { namespace Drivers {
 

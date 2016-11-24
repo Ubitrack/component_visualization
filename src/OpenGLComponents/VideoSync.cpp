@@ -31,6 +31,10 @@
 
 #include "VideoSync.h"
 
+#ifdef __APPLE__
+	#include <OpenGL/OpenGL.h>
+#endif
+
 void VideoSync::alarm( int ) { cont = 1; }
 int  VideoSync::cont = 0;
 
