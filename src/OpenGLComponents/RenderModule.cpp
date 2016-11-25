@@ -52,7 +52,7 @@ log4cpp::Category& loggerEvents( log4cpp::Category::getInstance( "Ubitrack.Event
 #endif
 
 //#include "Transparency.h"
-#include "X3DObject.h"
+#include "CustomGeometry.h"
 #include "VectorfieldViewer.h"
 #include "AntiMarker.h"
 #include "PointCloud.h"
@@ -481,10 +481,9 @@ boost::shared_ptr< VirtualObject > VirtualCamera::createComponent( const std::st
 	
 	//if ( type == "Transparency" )
 	//	return boost::shared_ptr< VirtualObject >( new Transparency( name, pConfig, key, pModule ) );
-//	if ( type == "X3DObject" )
-//		return boost::shared_ptr< VirtualObject >( new X3DObject( name, pConfig, key, pModule ) );
-//	else
-	if ( type == "VectorfieldViewer" )
+	if ( type == "CustomGeometry" )
+		return boost::shared_ptr< VirtualObject >( new CustomGeometry( name, pConfig, key, pModule ) );
+	else if ( type == "VectorfieldViewer" )
 		return boost::shared_ptr< VirtualObject >( new VectorfieldViewer( name, pConfig, key, pModule ) );
 	else if ( type == "AntiMarker" )
 		return boost::shared_ptr< VirtualObject >( new AntiMarker( name, pConfig, key, pModule ) );
@@ -547,7 +546,7 @@ UBITRACK_REGISTER_COMPONENT( ComponentFactory* const cf )
 {
 	std::vector< std::string > renderComponents;
 	//renderComponents.push_back( "Transparency" );
-//	renderComponents.push_back( "X3DObject" );
+	renderComponents.push_back( "CustomGeometry" );
 	renderComponents.push_back( "VectorfieldViewer" );
 	renderComponents.push_back( "AntiMarker" );
 	renderComponents.push_back( "PointCloud" );

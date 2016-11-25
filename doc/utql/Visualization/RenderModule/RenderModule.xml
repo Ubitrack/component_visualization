@@ -64,47 +64,6 @@
         </Output>
     </Pattern>
     
-    <Pattern name="X3DObjectParam" displayName="Renderer: X3D Object Settings">
-        <Description>
-            <h:p>This node represents an X3D object to be rendered. It is needed as parametrization for the X3DObject pattern.</h:p>
-        </Description>
-        
-        <Output>
-            <Node name="X3DObject" displayName="X3D Object">
-                <Attribute name="virtualObjectX3DPath" displayName="X3D File" xsi:type="PathAttributeDeclarationType">
-                    <Description>
-                        <h:p>The path pointing to the X3D file.</h:p>
-                    </Description>
-                </Attribute>
-                <Attribute name="occlusionOnly" displayName="Occlusion Only" default="false" xsi:type="EnumAttributeDeclarationType">
-                    <Description>
-                        <h:p>When
-                            <h:code>true</h:code>, object is only rendered to z-buffer and acts as occluder.
-                        </h:p>
-                    </Description>
-                    <EnumValue name="false" displayName="False"/>
-                    <EnumValue name="true" displayName="True"/>
-                </Attribute>
-            </Node>
-        </Output>
-    </Pattern>
-    
-    <Pattern name="InventorObjectParam" displayName="Renderer: Inventor Object Settings">
-        <Description>
-            <h:p>This node represents an Inventor object to be rendered. It is needed as parametrization for the InventorObject pattern.</h:p>
-        </Description>
-        
-        <Output>
-            <Node name="InventorObject" displayName="Inventor Object">
-                <Attribute name="virtualObjectInventorPath" displayName="Inventor File" xsi:type="PathAttributeDeclarationType">
-                    <Description>
-                        <h:p>The path pointing to the Inventor file.</h:p>
-                    </Description>
-                </Attribute>
-            </Node>
-        </Output>
-    </Pattern>
-    
     <Pattern name="DropShadowParam" displayName="Renderer: Drop Shadow Settings">
         <Description>
             <h:p>This node represents a shadow to be rendered. It is needed as parametrization for the DropShadow pattern.</h:p>
@@ -260,44 +219,15 @@
     </Pattern>
 
 
-    <Pattern name="X3DObject" displayName="Renderer: X3D Object Pose">
+    <Pattern name="CustomGeometry" displayName="Renderer: CustomGeometry">
         <Description>
             <h:p>This component displays an X3D file in the output window.</h:p>
         </Description>
         
         <Input>
             <Node name="Camera" displayName="Camera"/>
-            <Node name="Object" displayName="Object">
-                <Predicate>virtualObjectX3DPath!=''</Predicate>
-            </Node>
-            <Edge name="Input" source="Camera" destination="Object" displayName="Object Pose">
-                <Description>
-                    <h:p>The desired object pose</h:p>
-                </Description>
-                <Predicate>type=='6D'</Predicate>
-            </Edge>
-        </Input>
-        
-        <Constraints>
-            <TriggerGroup>
-                <Edge edge-ref="Input"/>
-            </TriggerGroup>
-        </Constraints>
-
-        <DataflowConfiguration>
-            <UbitrackLib class="X3DObject"/>
-        </DataflowConfiguration>
-    </Pattern>
-    
-    
-    <Pattern name="InventorObject" displayName="Renderer: Inventor Object Pose">
-        <Description>
-            <h:p>This component displays an Inventor file in the output window.</h:p>
-        </Description>
-        
-        <Input>
-            <Node name="Camera" displayName="Camera"/>
             <Node name="Object" displayName="Object"/>
+
             <Edge name="Input" source="Camera" destination="Object" displayName="Object Pose">
                 <Description>
                     <h:p>The desired object pose</h:p>
@@ -313,7 +243,21 @@
         </Constraints>
 
         <DataflowConfiguration>
-            <UbitrackLib class="InventorObject"/>
+            <UbitrackLib class="CustomGeometry"/>
+            <Attribute name="virtualObjectPath" displayName="Model File" xsi:type="PathAttributeDeclarationType">
+                <Description>
+                    <h:p>The path pointing to the model file.</h:p>
+                </Description>
+            </Attribute>
+            <Attribute name="occlusionOnly" displayName="Occlusion Only" default="false" xsi:type="EnumAttributeDeclarationType">
+                <Description>
+                    <h:p>When
+                        <h:code>true</h:code>, object is only rendered to z-buffer and acts as occluder.
+                    </h:p>
+                </Description>
+                <EnumValue name="false" displayName="False"/>
+                <EnumValue name="true" displayName="True"/>
+            </Attribute>
         </DataflowConfiguration>
     </Pattern>
     

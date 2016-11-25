@@ -25,7 +25,6 @@
 #define __VectorfieldViewer_h_INCLUDED__
 
 #include "TrackedObject.h"
-#include "X3DRender.h"
 
 namespace Ubitrack { namespace Drivers {
 

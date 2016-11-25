@@ -219,6 +219,7 @@ class VirtualObjectKey
 			if ( dfclass == "Cross2D"          ) m_priority =  50;
 			if ( dfclass == "AntiMarker"       ) m_priority =  50;
 			if ( dfclass == "StereoSeparation" ) m_priority =  50;
+			if ( dfclass == "CustomGeometry"   ) m_priority = 100;
 			if ( dfclass == "DropShadow"       ) m_priority = 150;
 			if ( dfclass == "ImageOutput"      ) m_priority = 200;
 			if ( dfclass == "ButtonOutput"     ) m_priority = 200;
