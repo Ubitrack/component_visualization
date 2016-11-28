@@ -118,23 +118,27 @@ void CustomGeometry::apply_material(const aiMaterial *mtl)
     unsigned int max;
 
     set_float4(c, 0.8f, 0.8f, 0.8f, 1.0f);
-    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse))
+    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse)) {
         color4_to_float4(&diffuse, c);
+    }
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, c);
 
     set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
-    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_SPECULAR, &specular))
-        color4_to_float4(&specular, c);
+    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_SPECULAR, &specular)) {
+        color4_to_float4(&specular, c);    
+    }
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
 
     set_float4(c, 0.2f, 0.2f, 0.2f, 1.0f);
-    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_AMBIENT, &ambient))
+    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_AMBIENT, &ambient)) {
         color4_to_float4(&ambient, c);
+    }
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, c);
 
     set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
-    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_EMISSIVE, &emission))
+    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_EMISSIVE, &emission)) {
         color4_to_float4(&emission, c);
+    }
     glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, c);
 
     max = 1;
