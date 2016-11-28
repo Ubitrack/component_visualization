@@ -82,9 +82,10 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
     // access OCL Manager and initialize if needed
 	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
-	static bool isInitialized = oclManager.isInitialized();
+	bool isInitialized = oclManager.isInitialized();
 	if (!isInitialized)
 	{
+		LOG4CPP_INFO(logger, "Initialize OclManager from Background texture");
         if (oclManager.isEnabled()) {
             oclManager.initializeOpenGL();
         }
