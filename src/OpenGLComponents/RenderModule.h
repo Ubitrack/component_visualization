@@ -238,8 +238,6 @@ class VirtualObjectKey
 };
 
 
-struct VirtualCameraPrivate;
-
 /**
  * @ingroup driver_components
  * Module for virtual OpenGL camera.
@@ -319,7 +317,6 @@ protected:
 	StereoRenderPasses m_stereoRenderPasses;
 
 	static int m_window;
-	VirtualCameraPrivate* m_camera_private;
 
 	bool m_isSetupComplete;
 
@@ -361,6 +358,10 @@ public:
 		
 		// Then invoke stop() in superclass
 		VirtualCamera::Component::stop();
+	}
+
+	virtual int setup() {
+		return getModule().setup();
 	}
 
 	/** Initialization of GL context, gets called on the GL thread only. */

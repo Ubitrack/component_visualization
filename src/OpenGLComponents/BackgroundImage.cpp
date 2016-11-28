@@ -72,6 +72,7 @@ void BackgroundImage::glCleanup()
 void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 {
     if (!getModule().isSetupComplete()) {
+		LOG4CPP_INFO(logger, "Waiting for setup of RenderModule");
         return;
     }
 
@@ -80,19 +81,15 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	// scene.  We have to restore this state below.
 	glDisable( GL_BLEND );
 
-    // access OCL Manager and initialize if needed
+	// access OCL Manager and initialize if needed
 	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
-	bool isInitialized = oclManager.isInitialized();
-	if (!isInitialized)
+	if (!oclManager.isInitialized())
 	{
-		LOG4CPP_INFO(logger, "Initialize OclManager from Background texture");
         if (oclManager.isEnabled()) {
             oclManager.initializeOpenGL();
         }
-		isInitialized = true;
-		return;
+		LOG4CPP_INFO(logger, "OCL Manager initialized: " << oclManager.isInitialized());
 	}
-	
 
 	// use image in stereo mode only if correct eye
 	if ( ( m_stereoEye == stereoEyeRight && num ) || ( m_stereoEye == stereoEyeLeft && !num ) )
@@ -100,7 +97,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
 	// check if we have an image to display as background
 	if ( m_background[num].get() == 0 ) return;
-	
+
 
 	int m_width  = m_pModule->m_width;
 	int m_height = m_pModule->m_height;

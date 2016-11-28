@@ -131,6 +131,7 @@ public:
 		if (m_pVirtualCamera != NULL) {
 			VirtualCamera::ComponentList objects = m_pVirtualCamera->getAllComponents();
 			for ( VirtualCamera::ComponentList::iterator i = objects.begin(); i != objects.end(); i++ ) {
+				(*i)->setup();
 				(*i)->glInit();
 			}
 		}
@@ -180,7 +181,8 @@ private:
 
 int VirtualCamera::setup()
 {
-
+	if (!m_isSetupComplete) {
+		LOG4CPP_INFO( logger, "VirtualCamera: setup" );
 
 /** FULLSCREEN NOT MIGRATED .
 	// make full screen?
@@ -197,9 +199,10 @@ int VirtualCamera::setup()
 
 **/
 
-	// setup is done in the CameraHandle setup method.
+		// setup is done in the CameraHandle setup method.
+		m_isSetupComplete = true;
 
-	m_isSetupComplete = true;
+	}
 	return 1;
 }
 
@@ -264,7 +267,6 @@ VirtualCamera::VirtualCamera( const VirtualCameraKey& key, boost::shared_ptr< Gr
 	, m_lastRedrawTime(0)
 	, m_vsync()
 	, m_stereoRenderPasses( stereoRenderNone )
-	, m_camera_private( NULL )
 {
 	LOG4CPP_DEBUG( logger, "VirtualCamera(): Creating module for module key '" << m_moduleKey << "'...");
 	std::string window_name(m_moduleKey.c_str());
