@@ -67,6 +67,19 @@ void CustomGeometry::draw3DContent( Measurement::Timestamp& t, int parity )
         glGetBooleanv(GL_COLOR_WRITEMASK, blendMode);
     }
 
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);    /* Uses default lighting parameters */
+
+//    glEnable(GL_DEPTH_TEST);
+
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+    glEnable(GL_NORMALIZE);
+
+    glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+
+
     /* if the display list has not been made yet, create a new one and
        fill it with scene contents */
     if(m_scene_list == 0) {
@@ -81,6 +94,7 @@ void CustomGeometry::draw3DContent( Measurement::Timestamp& t, int parity )
 
     glCallList(m_scene_list);
 
+    glPopAttrib();
 
     // Reset old blend mode
     if ( m_occlusionOnly )
