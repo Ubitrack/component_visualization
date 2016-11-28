@@ -28,6 +28,7 @@ if(WIN32)
                 assimp-${ASSIMP_MSVC_VERSION}-mt.lib
                 HINTS
                 ${ASSIMP_ROOT_DIR}/lib${ASSIMP_ARCHITECTURE}
+                ${ASSIMP_ROOT_DIR}/lib
                 )
 
         find_library(ASSIMP_LIBRARY_RELEASE				assimp-${ASSIMP_MSVC_VERSION}-mt.lib 			PATHS ${ASSIMP_LIBRARY_DIR})
@@ -38,7 +39,7 @@ if(WIN32)
                 debug		${ASSIMP_LIBRARY_DEBUG}
                 )
 
-        set(ASSIMP_LIBRARIES "ASSIMP_LIBRARY_RELEASE" "ASSIMP_LIBRARY_DEBUG")
+        set(ASSIMP_LIBRARIES "${ASSIMP_LIBRARY_RELEASE}" "${ASSIMP_LIBRARY_DEBUG}")
 
         FUNCTION(ASSIMP_COPY_BINARIES TargetDirectory)
             ADD_CUSTOM_TARGET(AssimpCopyBinaries

@@ -1,6 +1,7 @@
 set(the_description "The UbiTrack Visualization Render Components")
 ut_add_component(utvisualizationopengl DEPS utcore utdataflow utvision utvisualization)
 
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")
 
 SET(ASSIMP_ROOT_DIR ${EXTERNAL_LIBRARIES_DIR}/assimp)
 FIND_PACKAGE(Assimp)

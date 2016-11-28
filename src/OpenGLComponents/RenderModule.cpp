@@ -27,7 +27,6 @@
 	#include "GL/glew.h"
 #endif
 
-#include <GLFW/glfw3.h>
 #include <utVision/OpenCLManager.h>
 
 #include "RenderModule.h"

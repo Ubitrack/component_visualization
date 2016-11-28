@@ -8,12 +8,17 @@
 #include <map>
 
 
-#ifdef __APPLE__
+#ifdef _WIN32
+	#include <utUtil/CleanWindows.h>
+	#include <GL/gl.h>
+	#include <GL/glu.h>
+#elif __APPLE__
 	#include <OpenGL/OpenGL.h>
 	#include <OpenGL/glu.h>
 #else
-	#include <GL/gl.h>			// Header File For The OpenGL32 Library
-	#include <GL/glu.h>			// Header File For The GLu32 Library
+	#include <GL/gl.h>
+	#include <GL/glu.h>
+	#include <GL/glx.h>
 #endif
 
 

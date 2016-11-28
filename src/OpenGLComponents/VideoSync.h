@@ -30,9 +30,9 @@
  */
 
 #ifdef _WIN32
+	#include <utUtil/CleanWindows.h>
 	#include <GL/gl.h>
 	#include <GL/glu.h>
-	#include <utUtil/CleanWindows.h>
 #elif __APPLE__
 	#include <OpenGL/OpenGL.h>
 	#include <OpenGL/glu.h>
