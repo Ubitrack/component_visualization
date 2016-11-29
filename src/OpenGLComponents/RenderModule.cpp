@@ -127,6 +127,7 @@ public:
 	}
 
 	virtual bool setup(boost::shared_ptr<VirtualWindow>& window) {
+		LOG4CPP_TRACE(logger, "CameraHandleImpl setup.");
 		bool ret = CameraHandle::setup(window);
 		if (m_pVirtualCamera != NULL) {
 			VirtualCamera::ComponentList objects = m_pVirtualCamera->getAllComponents();
@@ -139,6 +140,7 @@ public:
 	}
 
 	virtual void teardown() {
+		LOG4CPP_TRACE(logger, "CameraHandleImpl teardown.");
 		if (m_pVirtualCamera != NULL) {
 			VirtualCamera::ComponentList objects = m_pVirtualCamera->getAllComponents();
 			for ( VirtualCamera::ComponentList::iterator i = objects.begin(); i != objects.end(); i++ ) {
