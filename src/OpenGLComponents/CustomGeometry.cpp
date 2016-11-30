@@ -209,10 +209,12 @@ void CustomGeometry::recursive_render (const aiScene *sc, const aiNode* nd)
 
             for(i = 0; i < face->mNumIndices; i++) {
                 int index = face->mIndices[i];
-                if(mesh->mColors[0] != NULL)
+                if(mesh->mColors[0] != NULL) {
                     glColor4fv((GLfloat*)&mesh->mColors[0][index]);
-                if(mesh->mNormals != NULL)
+                }
+                if(mesh->mNormals != NULL) {
                     glNormal3fv(&mesh->mNormals[index].x);
+                }
                 glVertex3fv(&mesh->mVertices[index].x);
             }
 

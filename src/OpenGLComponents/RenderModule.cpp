@@ -164,7 +164,7 @@ public:
 
 	virtual void on_render(int ellapsed_time) {
 		if (m_pVirtualCamera != NULL) {
-//			m_pVirtualCamera->display(ellapsed_time);
+			m_pVirtualCamera->display(ellapsed_time);
 		}
 	}
 
@@ -273,7 +273,6 @@ VirtualCamera::VirtualCamera( const VirtualCameraKey& key, boost::shared_ptr< Gr
 	LOG4CPP_DEBUG( logger, "VirtualCamera(): Creating module for module key '" << m_moduleKey << "'...");
 	std::string window_name(m_moduleKey.c_str());
 
-	// XXX can this be simplified ??
 	boost::shared_ptr<CameraHandleImpl> cam( new CameraHandleImpl(window_name, m_width, m_height, this));
 	boost::shared_ptr<CameraHandle> cam_ = boost::dynamic_pointer_cast<CameraHandle>(cam);
 	m_winHandle = RenderManager::singleton().register_camera(cam_);
