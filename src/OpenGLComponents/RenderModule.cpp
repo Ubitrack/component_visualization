@@ -151,26 +151,41 @@ public:
 	}
 
 	virtual void render(int ellapsed_time) {
+		CameraHandle::render(ellapsed_time);
 		if (m_pVirtualCamera != NULL) {
 			m_pVirtualCamera->display(ellapsed_time);
 		}
 	}
 
-	virtual void on_keypress(int key, int scancode, int action, int mods) {
-		if (m_pVirtualCamera != NULL) {
+	virtual int on_keypress(int key, int scancode, int action, int mods) {
+		if ((CameraHandle::on_keypress(key, scancode, action, mods) == 0 ) && (m_pVirtualCamera != NULL)) {
 			m_pVirtualCamera->keyboard((unsigned char) key, (int) m_last_xpos, (int) m_last_ypos);
 		}
+		// event was handled;
+		return 1;
 	}
 
 	virtual void on_render(int ellapsed_time) {
+		CameraHandle::on_render(ellapsed_time);
 		if (m_pVirtualCamera != NULL) {
 			m_pVirtualCamera->display(ellapsed_time);
 		}
 	}
 
-	virtual void on_cursorpos(double xpos, double ypos) {
-		m_last_xpos = xpos;
-		m_last_ypos = ypos;
+	virtual int on_cursorpos(double xpos, double ypos) {
+		if (CameraHandle::on_cursorpos(xpos, ypos) == 0) {
+			m_last_xpos = xpos;
+			m_last_ypos = ypos;
+		}
+		// event was handled;
+		return 1;
+	}
+
+	virtual void on_window_size(int w, int h) {
+		CameraHandle::on_window_size(w, h);
+		if (m_pVirtualCamera != NULL) {
+			m_pVirtualCamera->reshape(w, h);
+		}
 	}
 
 private:
