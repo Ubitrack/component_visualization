@@ -13,6 +13,7 @@ if(WIN32)
             assimp/anim.h
             HINTS
             ${ASSIMP_ROOT_DIR}/include
+            "${EXTERNAL_LIBRARIES_DIR}/assimp/include"
             )
 
     if(MSVC12)
@@ -29,10 +30,13 @@ if(WIN32)
                 HINTS
                 ${ASSIMP_ROOT_DIR}/lib${ASSIMP_ARCHITECTURE}
                 ${ASSIMP_ROOT_DIR}/lib
+                "${EXTERNAL_LIBRARIES_DIR}/assimp/lib"
                 )
 
-        find_library(ASSIMP_LIBRARY_RELEASE				assimp-${ASSIMP_MSVC_VERSION}-mt.lib 			PATHS ${ASSIMP_LIBRARY_DIR})
-        find_library(ASSIMP_LIBRARY_DEBUG				assimp-${ASSIMP_MSVC_VERSION}-mtd.lib			PATHS ${ASSIMP_LIBRARY_DIR})
+        find_library(ASSIMP_LIBRARY_RELEASE				assimp-${ASSIMP_MSVC_VERSION}-mt.lib 			
+            PATHS ${ASSIMP_LIBRARY_DIR} "${EXTERNAL_LIBRARIES_DIR}/assimp/lib")
+        find_library(ASSIMP_LIBRARY_DEBUG				assimp-${ASSIMP_MSVC_VERSION}-mtd.lib			
+            PATHS ${ASSIMP_LIBRARY_DIR} "${EXTERNAL_LIBRARIES_DIR}/assimp/lib")
 
         set(ASSIMP_LIBRARY
                 optimized 	${ASSIMP_LIBRARY_RELEASE}
