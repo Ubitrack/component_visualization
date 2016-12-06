@@ -22,8 +22,8 @@
  */
 
 
-#ifndef UBITACK_CUSTOMGEOMETRY_H
-#define UBITACK_CUSTOMGEOMETRY_H
+#ifndef UBITRACK_CUSTOMGEOMETRY_H
+#define UBITRACK_CUSTOMGEOMETRY_H
 
 #include "TrackedObject.h"
 
@@ -90,4 +90,4 @@ protected:
 };
 
 } } // namespace Ubitrack::Drivers
-#endif //UBITACK_CUSTOMGEOMETRY_H
+#endif //UBITRACK_CUSTOMGEOMETRY_H
