@@ -83,7 +83,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
 	// access OCL Manager and initialize if needed
 	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
-	if (!oclManager.isInitialized())
+	if ((oclManager.isActive()) && (!oclManager.isInitialized()))
 	{
         if (oclManager.isEnabled()) {
             oclManager.initializeOpenGL();
@@ -232,7 +232,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 #endif
                 if (err != CL_SUCCESS)
                 {
-                    LOG4CPP_ERROR( logger, "error at  clCreateFromGLTexture2D:" << err );
+					LOG4CPP_ERROR(logger, "error at  clCreateFromGLTexture2D:" << err);
                 }
 #endif
             }
@@ -240,7 +240,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 
 		}
 
-        if (image_isOnGPU) {
+		if (image_isOnGPU && (oclManager.isInitialized())) {
 #ifdef HAVE_OPENCL
 
 			glBindTexture( GL_TEXTURE_2D, m_texture );
@@ -262,7 +262,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
             err = clEnqueueAcquireGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
             if(err != CL_SUCCESS)
             {
-                LOG4CPP_ERROR( logger, "error at  clEnqueueAcquireGLObjects:" << err );
+				LOG4CPP_ERROR(logger, "error at  clEnqueueAcquireGLObjects:" << err);
             }
 
 			cl_mem clBuffer = (cl_mem) m_convertedImage.handle(cv::ACCESS_READ);
@@ -275,7 +275,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
             err = clEnqueueCopyBufferToImage(cv_ocl_queue, clBuffer, m_clImage, offset, dst_origin, region, 0, NULL, NULL);
             if (err != CL_SUCCESS)
             {
-                LOG4CPP_ERROR( logger, "error at  clEnqueueCopyBufferToImage:" << err );
+				LOG4CPP_ERROR(logger, "error at  clEnqueueCopyBufferToImage:" << err);
             }
 
             err = clEnqueueReleaseGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
