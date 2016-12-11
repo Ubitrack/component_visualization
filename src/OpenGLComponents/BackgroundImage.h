@@ -30,13 +30,8 @@
 
 #include "RenderModule.h"
 #include <utVision/Image.h>
-#ifdef HAVE_OPENCL
-#ifdef __APPLE__
-    #include "OpenCL/opencl.h"
-#else
-    #include "CL/cl.h"
-#endif
-#endif
+#include <utVision/TextureUpdate.h>
+
 
 namespace Ubitrack { namespace Drivers {
 
@@ -86,17 +81,8 @@ protected:
 
 	// variables for textured drawing
 	bool m_bUseTexture;
-	bool m_bTextureInitialized;
-	GLuint m_texture;
+	Vision::TextureUpdate m_textureUpdate;
 
-#ifdef HAVE_OPENCL
-	//OpenCL
-	cl_mem m_clImage;
-	cv::UMat m_convertedImage;
-#endif
-
-	unsigned m_pow2Width;
-	unsigned m_pow2Height;
 
 	Ubitrack::Dataflow::PushConsumer< Ubitrack::Measurement::ImageMeasurement > m_image0;
 	Ubitrack::Dataflow::PushConsumer< Ubitrack::Measurement::ImageMeasurement > m_image1;

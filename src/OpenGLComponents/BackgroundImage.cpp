@@ -41,7 +41,6 @@ BackgroundImage::BackgroundImage( const std::string& name, boost::shared_ptr< Gr
 	const VirtualObjectKey& componentKey, VirtualCamera* pModule )
 	: VirtualObject( name, subgraph, componentKey, pModule )
 	, m_bUseTexture( true )
-	, m_bTextureInitialized( false )
 	, m_image0( "Image1", *this, boost::bind( &BackgroundImage::imageIn, this, _1, 0 ))
 	, m_image1( "Image2", *this, boost::bind( &BackgroundImage::imageIn, this, _1, 1 ))
 {
@@ -60,12 +59,7 @@ BackgroundImage::~BackgroundImage()
 void BackgroundImage::glCleanup()
 {
 	LOG4CPP_DEBUG( logger, "glCleanup() called" );
-
-	if ( m_bTextureInitialized ) {
- 		glBindTexture( GL_TEXTURE_2D, 0 );
- 		glDisable( GL_TEXTURE_2D );
- 		glDeleteTextures( 1, &m_texture );
- 	}
+	m_textureUpdate.cleanupTexture();
 }
 
 /** render the object */
@@ -80,16 +74,6 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	// module might have enabled global transparency for the virtual
 	// scene.  We have to restore this state below.
 	glDisable( GL_BLEND );
-
-	// access OCL Manager and initialize if needed
-	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
-	if ((oclManager.isActive()) && (!oclManager.isInitialized()))
-	{
-        if (oclManager.isEnabled()) {
-            oclManager.initializeOpenGL();
-        }
-		LOG4CPP_INFO(logger, "OCL Manager initialized: " << oclManager.isInitialized());
-	}
 
 	// use image in stereo mode only if correct eye
 	if ( ( m_stereoEye == stereoEyeRight && num ) || ( m_stereoEye == stereoEyeLeft && !num ) )
@@ -118,57 +102,42 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	// lock it to avoid random crashes
 	boost::mutex::scoped_lock l( m_imageLock[num] );
 
-    // if OpenCL is enabled and image is on GPU, then use OCL codepath
-    bool image_isOnGPU = oclManager.isEnabled() & m_background[num]->isOnGPU();
-
-	// find out texture format
-	int umatConvertCode = -1;
-	GLenum imgFormat = GL_LUMINANCE;
-	int numOfChannels = 1;
-	switch ( m_background[num]->pixelFormat() ) {
-		case Vision::Image::LUMINANCE:
-			imgFormat = GL_LUMINANCE;
-			numOfChannels = 1;
-			break;
-		case Vision::Image::RGB:
-			numOfChannels = image_isOnGPU ? 4 : 3;
-			imgFormat = image_isOnGPU ? GL_RGBA : GL_RGB;
-			umatConvertCode = cv::COLOR_RGB2RGBA;
-			break;
-#ifndef GL_BGR_EXT
-		case Vision::Image::BGR:
-			imgFormat = image_isOnGPU ? GL_RGBA : GL_RGB;
-			numOfChannels = image_isOnGPU ? 4 : 3;
-			umatConvertCode = cv::COLOR_BGR2RGBA;
-			break;
-		case Vision::Image::BGRA:
-			numOfChannels = 4;
-			imgFormat = image_isOnGPU ? GL_RGBA : GL_BGRA;
-			umatConvertCode = cv::COLOR_BGRA2RGBA;
-			break;
-#else
-		case Vision::Image::BGR:
-			numOfChannels = image_isOnGPU ? 4 : 3;
-			imgFormat = image_isOnGPU ? GL_RGBA : GL_BGR_EXT;
-			umatConvertCode = cv::COLOR_BGR2RGBA;
-			break;
-		case Vision::Image::BGRA:
-			numOfChannels = 4;
-			imgFormat = image_isOnGPU ? GL_RGBA : GL_BGRA_EXT;
-			umatConvertCode = cv::COLOR_BGRA2RGBA;
-			break;
-#endif
-		case Vision::Image::RGBA:
-			numOfChannels = 4;
-			imgFormat = GL_RGBA;
-			break;
-		default:
-			// Log Error ?
-			break;
-	}
-
 	if ( !m_bUseTexture )
 	{
+
+		// find out texture format
+		GLenum imgFormat = GL_LUMINANCE;
+		GLenum pixelSize = GL_UNSIGNED_BYTE;
+		switch ( m_background[num]->pixelFormat() ) {
+			case Vision::Image::LUMINANCE:
+				imgFormat = GL_LUMINANCE;
+				break;
+			case Vision::Image::RGB:
+				imgFormat = GL_RGB;
+				break;
+	#ifndef GL_BGR_EXT
+			case Vision::Image::BGR:
+				imgFormat = GL_RGB;
+				break;
+			case Vision::Image::BGRA:
+				imgFormat = GL_BGRA;
+				break;
+	#else
+			case Vision::Image::BGR:
+				imgFormat = GL_BGR_EXT;
+				break;
+			case Vision::Image::BGRA:
+				imgFormat = GL_BGRA_EXT;
+				break;
+	#endif
+			case Vision::Image::RGBA:
+				imgFormat = GL_RGBA;
+				break;
+			default:
+				// Log Error ?
+				break;
+		}
+
 		// glDrawPixels version
 		glDisable( GL_TEXTURE_2D );
 
@@ -185,131 +154,31 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 				-((float)m_height/(float)m_background[num]->height())*1.0000001f
 			);
 		}
-		glDrawPixels( m_background[num]->width(), m_background[num]->height(), imgFormat, GL_UNSIGNED_BYTE, m_background[num]->Mat().data );
+		glDrawPixels( m_background[num]->width(), m_background[num]->height(), imgFormat, pixelSize, m_background[num]->Mat().data );
 	}
 	else
 	{
 		glEnable(GL_TEXTURE_2D);
-		if ( !m_bTextureInitialized )
+		if ( !m_textureUpdate.m_bTextureInitialized )
 		{
-			
-			m_bTextureInitialized = true;
-			
-			// generate power-of-two sizes
-			m_pow2Width = 1;
-			while ( m_pow2Width < (unsigned)m_background[ num ]->width() )
-				m_pow2Width <<= 1;
-
-			m_pow2Height = 1;
-			while ( m_pow2Height < (unsigned)m_background[ num ]->height() )
-				m_pow2Height <<= 1;
-
-			glGenTextures( 1, &m_texture );
-			glBindTexture( GL_TEXTURE_2D, m_texture );
-		
-			// define texture parameters
-			glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-			glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
-		
-			// load empty texture image (defines texture size)
-			glTexImage2D( GL_TEXTURE_2D, 0, numOfChannels, m_pow2Width, m_pow2Height, 0, imgFormat, GL_UNSIGNED_BYTE, 0 );
-			LOG4CPP_DEBUG( logger, "glTexImage2D( width=" << m_pow2Width << ", height=" << m_pow2Height << " ): " << glGetError() );
-		
-			LOG4CPP_INFO( logger, "initalized texture ( " << imgFormat << " ) GPU? " << image_isOnGPU);
-
-
-            if (oclManager.isInitialized()) {
-
-#ifdef HAVE_OPENCL
-                //Get an image Object from the OpenGL texture
-                cl_int err;
-// windows specific or opencl version specific ??
-#ifdef WIN32
-                m_clImage = clCreateFromGLTexture2D( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, m_texture, &err);
-#else
-                m_clImage = clCreateFromGLTexture( oclManager.getContext(), CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, m_texture, &err);
-#endif
-                if (err != CL_SUCCESS)
-                {
-					LOG4CPP_ERROR(logger, "error at  clCreateFromGLTexture2D:" << err);
-                }
-#endif
-            }
-
-
+			m_textureUpdate.initializeTexture(m_background[ num ]);
 		}
 
-		if (image_isOnGPU && (oclManager.isInitialized())) {
-#ifdef HAVE_OPENCL
-
-			glBindTexture( GL_TEXTURE_2D, m_texture );
-
-            if (umatConvertCode != -1) {
-				cv::cvtColor(m_background[num]->uMat(), m_convertedImage, umatConvertCode );
-			} else {
-                m_convertedImage = m_background[num]->uMat();
-            }
-
-			cv::ocl::finish();
-			glFinish();
-
-            cl_command_queue commandQueue = oclManager.getCommandQueue();
-            cl_int err;
-
-			clFinish(commandQueue);
-
-            err = clEnqueueAcquireGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
-            if(err != CL_SUCCESS)
-            {
-				LOG4CPP_ERROR(logger, "error at  clEnqueueAcquireGLObjects:" << err);
-            }
-
-			cl_mem clBuffer = (cl_mem) m_convertedImage.handle(cv::ACCESS_READ);
-			cl_command_queue cv_ocl_queue = (cl_command_queue)cv::ocl::Queue::getDefault().ptr();
-
-            size_t offset = 0;
-            size_t dst_origin[3] = {0, 0, 0};
-            size_t region[3] = {static_cast<size_t>(m_convertedImage.cols), static_cast<size_t>(m_convertedImage.rows), 1};
-
-            err = clEnqueueCopyBufferToImage(cv_ocl_queue, clBuffer, m_clImage, offset, dst_origin, region, 0, NULL, NULL);
-            if (err != CL_SUCCESS)
-            {
-				LOG4CPP_ERROR(logger, "error at  clEnqueueCopyBufferToImage:" << err);
-            }
-
-            err = clEnqueueReleaseGLObjects(commandQueue, 1, &m_clImage, 0, NULL, NULL);
-            if(err != CL_SUCCESS)
-            {
-                LOG4CPP_ERROR( logger, "error at  clEnqueueReleaseGLObjects:" << err );
-            }
-			cv::ocl::finish();
-
-
-#else // HAVE_OPENCL
-            LOG4CPP_ERROR( logger, "Image isOnGPU but OpenCL is disabled!!");
-#endif // HAVE_OPENCL
-        } else {
-            // load image from CPU buffer into texture
-            glBindTexture( GL_TEXTURE_2D, m_texture );
-            glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, m_background[ num ]->width(), m_background[ num ]->height(),
-                    imgFormat, GL_UNSIGNED_BYTE, m_background[ num ]->Mat().data );
-
-        }
+		m_textureUpdate.updateTexture(m_background[num]);
 
 #ifdef ENABLE_EVENT_TRACING
 		TRACEPOINT_MEASUREMENT_RECEIVE(getEventDomain(), m_background[num].time(), getName().c_str(), "TextureUpdated")
 #endif
 
-		glBindTexture(GL_TEXTURE_2D, m_texture);
+		glBindTexture(GL_TEXTURE_2D, m_textureUpdate.m_texture);
 
 		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 		// display textured rectangle
 		double y0 = m_background[ num ]->origin() ? 0 : m_height;
 		double y1 = m_height - y0;
-		double tx = double( m_background[ num ]->width() ) / m_pow2Width;
-		double ty = double( m_background[ num ]->height() ) / m_pow2Height;
+		double tx = double( m_background[ num ]->width() ) / m_textureUpdate.m_pow2Width;
+		double ty = double( m_background[ num ]->height() ) / m_textureUpdate.m_pow2Height;
 
 		// draw two triangles
 		glBegin( GL_TRIANGLE_STRIP );
@@ -348,23 +217,7 @@ void BackgroundImage::imageIn( const Ubitrack::Measurement::ImageMeasurement& im
 	LOG4CPP_DEBUG( logger, "received background image with timestamp " << img.time() );
 	boost::mutex::scoped_lock l( m_imageLock[num] );
 
-	if(img->depth() == IPL_DEPTH_32F){
-        // @todo should this computation be moved to the rendering thread ?
-        // also this does assume the image is on CPU !!!
-		boost::shared_ptr<Ubitrack::Vision::Image> p(new Ubitrack::Vision::Image(img->width(), img->height(), 1, IPL_DEPTH_8U ));
-		float* depthData = (float*) img->Mat().data;
-		unsigned char* up =(unsigned char*) p->Mat().data;
-		LOG4CPP_INFO(logger, "copy data");
-		for(unsigned int i=0;i<img->width()*img->height();i++)
-			if(depthData[i] != depthData[i])
-				up[i] = 0;
-			else 
-				up[i] = depthData[i]*255;
-		
-		m_background[num] = Ubitrack::Measurement::ImageMeasurement(img.time(), p);
-	} else {
-		m_background[num] = img;
-	}
+	m_background[num] = img;
 	m_pModule->invalidate( this );
 }
 
