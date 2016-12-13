@@ -5,7 +5,7 @@ elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
 endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 if(WIN32)
-    set(ASSIMP_ROOT_DIR CACHE PATH "ASSIMP root directory")
+    set(ASSIMP_ROOT_DIR ${ASSIMP_DIR} CACHE PATH "ASSIMP root directory")
 
     # Find path of each library
     find_path(ASSIMP_INCLUDE_DIR
@@ -16,13 +16,15 @@ if(WIN32)
             "${EXTERNAL_LIBRARIES_DIR}/assimp/include"
             )
 
-    if(MSVC12)
+    if(MSVC10)
+        set(ASSIMP_MSVC_VERSION "vc100")
+    elseif(MSVC12)
         set(ASSIMP_MSVC_VERSION "vc120")
     elseif(MSVC14)
         set(ASSIMP_MSVC_VERSION "vc140")
-    endif(MSVC12)
+    endif(MSVC10)
 
-    if(MSVC12 OR MSVC14)
+    if(MSVC10 OR MSVC12 OR MSVC14)
 
         find_path(ASSIMP_LIBRARY_DIR
                 NAMES

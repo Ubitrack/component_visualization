@@ -3,7 +3,7 @@ ut_add_component(utvisualizationopengl DEPS utcore utdataflow utvision utvisuali
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")
 
-SET(ASSIMP_ROOT_DIR ${EXTERNAL_LIBRARIES_DIR}/assimp)
+SET(ASSIMP_DIR ${EXTERNAL_LIBRARIES_DIR}/assimp)
 FIND_PACKAGE(Assimp)
 
 ut_component_include_directories(${UBITRACK_CORE_DEPS_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${ASSIMP_INCLUDE_DIR})
