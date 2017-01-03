@@ -29,8 +29,8 @@ void set_float4(float f[4], float a, float b, float c, float d)
 CustomGeometry::CustomGeometry( const std::string& name, boost::shared_ptr< Graph::UTQLSubgraph > subgraph,
         const VirtualObjectKey& componentKey, VirtualCamera* pModule )
         : TrackedObject( name, subgraph, componentKey, pModule )
-        , m_modelFilePath( "" )
         , m_occlusionOnly( false )
+        , m_modelFilePath( "" )
         , m_scene(NULL)
         , m_scene_list(0)
 {
@@ -43,13 +43,18 @@ CustomGeometry::CustomGeometry( const std::string& name, boost::shared_ptr< Grap
     if ( subgraph->m_DataflowAttributes.hasAttribute( "occlusionOnly" ) && subgraph->m_DataflowAttributes.getAttribute( "occlusionOnly" ).getText() == "true" )
         m_occlusionOnly = true;
 
-    // load model
-    struct aiLogStream stream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL);
-    aiAttachLogStream(&stream);
+    try {
+        // load model
+        struct aiLogStream stream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL);
+        aiAttachLogStream(&stream);
 
-    m_scene = aiImportFile(m_modelFilePath.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
+        m_scene = aiImportFile(m_modelFilePath.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
 
-    aiDetachAllLogStreams();
+        aiDetachAllLogStreams();        
+    } catch (std::exception& e) {
+        LOG4CPP_ERROR( logger, e.what() );
+        UBITRACK_THROW( "Error loading custom geometry" );
+    }
 
 }
 
@@ -120,24 +125,32 @@ void CustomGeometry::apply_material(const aiMaterial *mtl)
     set_float4(c, 0.8f, 0.8f, 0.8f, 1.0f);
     if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse)) {
         color4_to_float4(&diffuse, c);
+    } else {
+        LOG4CPP_DEBUG( logger, "Error loading diffuse color for custom geometry");
     }
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, c);
 
     set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
     if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_SPECULAR, &specular)) {
         color4_to_float4(&specular, c);    
+    } else {
+        LOG4CPP_DEBUG( logger, "Error loading specular color for custom geometry");
     }
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
 
     set_float4(c, 0.2f, 0.2f, 0.2f, 1.0f);
     if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_AMBIENT, &ambient)) {
         color4_to_float4(&ambient, c);
+    } else {
+        LOG4CPP_DEBUG( logger, "Error loading ambient color for custom geometry");
     }
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, c);
 
     set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
     if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_EMISSIVE, &emission)) {
         color4_to_float4(&emission, c);
+    } else {
+        LOG4CPP_DEBUG( logger, "Error loading emissive color for custom geometry");
     }
     glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, c);
 
