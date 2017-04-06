@@ -46,7 +46,7 @@ void ImageOutput::draw( Measurement::Timestamp&, int parity )
 		m_height = m_pModule->m_height;
 		if ((m_image) && (m_image->Mat().data)) delete[] (unsigned char*)(m_image->Mat().data);
 		data = new unsigned char[m_width*m_height*3];
-		m_image = boost::shared_ptr< Vision::Image >( new Vision::Image( m_width, m_height, 3, data, IPL_DEPTH_8U ) );
+		m_image = boost::shared_ptr< Vision::Image >( new Vision::Image( m_width, m_height, 3, data, CV_8U ) );
 	}
 
 	data = (unsigned char*)m_image->Mat().data;

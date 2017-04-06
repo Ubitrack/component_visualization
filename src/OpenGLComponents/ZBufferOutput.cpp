@@ -44,7 +44,7 @@ void ZBufferOutput::draw( Measurement::Timestamp&, int parity )
 		m_height = m_pModule->m_height;
 		if ((m_zBuffer) && (m_zBuffer->Mat().data)) delete (unsigned char*)(m_zBuffer->Mat().data);
 		data = new unsigned char[m_width*m_height];
-		m_zBuffer = boost::shared_ptr< Vision::Image >( new Vision::Image( m_width, m_height, 1, data, IPL_DEPTH_8U ) );
+		m_zBuffer = boost::shared_ptr< Vision::Image >( new Vision::Image( m_width, m_height, 1, data, CV_8U ) );
 	}
 
 	m_zBuffer->set_origin(1);
