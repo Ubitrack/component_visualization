@@ -159,7 +159,7 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 	else
 	{
 		glEnable(GL_TEXTURE_2D);
-		if ( !m_textureUpdate.m_bTextureInitialized )
+		if ( !m_textureUpdate.isInitialized() )
 		{
 			m_textureUpdate.initializeTexture(m_background[ num ]);
 		}
@@ -170,15 +170,15 @@ void BackgroundImage::draw( Measurement::Timestamp& t, int num )
 		TRACEPOINT_MEASUREMENT_RECEIVE(getEventDomain(), m_background[num].time(), getName().c_str(), "TextureUpdated")
 #endif
 
-		glBindTexture(GL_TEXTURE_2D, m_textureUpdate.m_texture);
+		glBindTexture(GL_TEXTURE_2D, m_textureUpdate.textureId());
 
 		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 		// display textured rectangle
 		double y0 = m_background[ num ]->origin() ? 0 : m_height;
 		double y1 = m_height - y0;
-		double tx = double( m_background[ num ]->width() ) / m_textureUpdate.m_pow2Width;
-		double ty = double( m_background[ num ]->height() ) / m_textureUpdate.m_pow2Height;
+		double tx = double( m_background[ num ]->width() ) / m_textureUpdate.pow2width();
+		double ty = double( m_background[ num ]->height() ) / m_textureUpdate.pow2height();
 
 		// draw two triangles
 		glBegin( GL_TRIANGLE_STRIP );
