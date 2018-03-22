@@ -21,12 +21,6 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-//
-
-#ifdef HAVE_GLEW
-	#include "GL/glew.h"
-#endif
-
 #include <utVision/OpenCLManager.h>
 
 #include "RenderModule.h"

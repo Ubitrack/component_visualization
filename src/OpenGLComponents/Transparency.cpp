@@ -30,12 +30,6 @@
 
 #include "Transparency.h"
 
-
-// #ifdef HAVE_GLEW
-	// #include "GL/glew.h"
-// #endif
-//removed by CW (16.7.2012) -- compile errror on windows
-
 namespace Ubitrack { namespace Drivers {
 
 Transparency::Transparency( const std::string& name, boost::shared_ptr< Graph::UTQLSubgraph > subgraph,
@@ -58,16 +52,12 @@ void Transparency::draw( Measurement::Timestamp& t, int parity )
 {
 //added win32-guard by CW (16.7.2012): gl-functions seem to be unavailable on windows systems
 #ifndef WIN32 
-#ifdef HAVE_GLEW
 	LOG4CPP_DEBUG( logger, "Transparency::draw(), set alpha to " << alpha << " for timestamp " << t );
 
 	// Enable global transparency for the virtual scene. This affects
 	// all render components except the BackgroundVideo component.
 	glBlendColor ( 0.0, 0.0, 0.0, alpha );
 	glBlendFunc ( GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA );
-#else
-	LOG4CPP_ERROR( logger, "Transparency::draw() has no effect since 'glew' is not installed" );
-#endif
 #endif
 
 }

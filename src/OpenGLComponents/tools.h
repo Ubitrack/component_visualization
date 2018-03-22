@@ -7,19 +7,21 @@
 #include <vector>
 #include <map>
 
+// GLAD
+#include <glad/glad.h>
 
-#ifdef _WIN32
-	#include <utUtil/CleanWindows.h>
-	#include <GL/gl.h>
-	#include <GL/glu.h>
-#elif __APPLE__
-	#include <OpenGL/OpenGL.h>
-	#include <OpenGL/glu.h>
-#else
-	#include <GL/gl.h>
-	#include <GL/glu.h>
-	#include <GL/glx.h>
-#endif
+// #ifdef _WIN32
+// 	#include <utUtil/CleanWindows.h>
+// 	#include <GL/gl.h>
+// 	#include <GL/glu.h>
+// #elif __APPLE__
+// 	#include <OpenGL/OpenGL.h>
+// 	#include <OpenGL/glu.h>
+// #else
+// 	#include <GL/gl.h>
+// 	#include <GL/glu.h>
+// 	#include <GL/glx.h>
+// #endif
 
 
 #include "Tuple.h"

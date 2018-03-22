@@ -27,13 +27,16 @@
 
 #include "TrackedObject.h"
 
-#ifdef __APPLE__
-    #include <OpenGL/OpenGL.h>
-	#include <OpenGL/glu.h>
-#else
-    #include <GL/gl.h>			// Header File For The OpenGL32 Library
-    #include <GL/glu.h>			// Header File For The GLu32 Library
-#endif
+// GLAD
+#include <glad/glad.h>
+
+// #ifdef __APPLE__
+//     #include <OpenGL/OpenGL.h>
+// 	#include <OpenGL/glu.h>
+// #else
+//     #include <GL/gl.h>			// Header File For The OpenGL32 Library
+//     #include <GL/glu.h>			// Header File For The GLu32 Library
+// #endif
 
 
 /* assimp include files. These three are usually needed. */

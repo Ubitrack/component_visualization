@@ -23,10 +23,6 @@
 
 
 
-#ifdef HAVE_GLEW
-	#include "GL/glew.h"
-#endif
-
 #include "PointCloud.h"
 
 namespace Ubitrack { namespace Drivers {
@@ -74,13 +70,11 @@ void PointCloud::draw( Measurement::Timestamp&, int parity )
 		glHint( GL_POINT_SMOOTH_HINT, GL_NICEST );
 		m_setup = 0;
 
-		#ifdef HAVE_GLEW
-			float coeffs[] = {0.0, 1.0, 0.0};
-			glPointParameterfvARB( GL_POINT_DISTANCE_ATTENUATION, coeffs );
-			glPointParameterfARB( GL_POINT_SIZE_MAX, m_size );
-			glPointParameterfARB( GL_POINT_SIZE_MIN,    1.0 );
-			glPointParameterfARB( GL_POINT_FADE_THRESHOLD_SIZE, m_size );
-		#endif
+		float coeffs[] = {0.0, 1.0, 0.0};
+		glPointParameterfvARB( GL_POINT_DISTANCE_ATTENUATION, coeffs );
+		glPointParameterfARB( GL_POINT_SIZE_MAX, m_size );
+		glPointParameterfARB( GL_POINT_SIZE_MIN,    1.0 );
+		glPointParameterfARB( GL_POINT_FADE_THRESHOLD_SIZE, m_size );
 	}
 
 	// render the lot
