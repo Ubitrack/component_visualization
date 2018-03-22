@@ -1,15 +1,7 @@
 #ifndef TUPLE_H
 #define TUPLE_H
 
-// GLAD
-#include <glad/glad.h>
-
-// #ifdef __APPLE__
-// 	#include <OpenGL/OpenGL.h>
-// #else
-// 	#include <GL/gl.h>			// Header File For The OpenGL32 Library
-// 	#include <GL/glu.h>			// Header File For The GLu32 Library
-// #endif
+#include <utVisualization/OpenGLWrapper.h>
 
 #include <iostream>
 

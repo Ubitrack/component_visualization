@@ -3,6 +3,14 @@
 #include "tools.h"
 
 
+// should be replaced ..
+#ifdef __APPLE__
+	#include <OpenGL/glu.h>
+#else
+	#include <GL/glu.h>
+#endif
+
+
 int lpot( int val ) {
 	for (int i = 0; i < 16; i++) {
 		int j = 1 << i;

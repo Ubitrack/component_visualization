@@ -71,10 +71,10 @@ void PointCloud::draw( Measurement::Timestamp&, int parity )
 		m_setup = 0;
 
 		float coeffs[] = {0.0, 1.0, 0.0};
-		glPointParameterfvARB( GL_POINT_DISTANCE_ATTENUATION, coeffs );
-		glPointParameterfARB( GL_POINT_SIZE_MAX, m_size );
-		glPointParameterfARB( GL_POINT_SIZE_MIN,    1.0 );
-		glPointParameterfARB( GL_POINT_FADE_THRESHOLD_SIZE, m_size );
+		glPointParameterfv( GL_POINT_DISTANCE_ATTENUATION, coeffs );
+		glPointParameterf( GL_POINT_SIZE_MAX, m_size );
+		glPointParameterf( GL_POINT_SIZE_MIN,    1.0 );
+		glPointParameterf( GL_POINT_FADE_THRESHOLD_SIZE, m_size );
 	}
 
 	// render the lot

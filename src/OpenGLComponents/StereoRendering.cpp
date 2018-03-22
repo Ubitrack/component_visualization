@@ -24,6 +24,15 @@
 
 #include "StereoRendering.h"
 
+
+// should be replaced ..
+#ifdef __APPLE__
+	#include <OpenGL/glu.h>
+#else
+	#include <GL/glu.h>
+#endif
+
+
 namespace Ubitrack { namespace Drivers {
 
 

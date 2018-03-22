@@ -26,7 +26,7 @@
 
 #ifdef WIN32
 #include <utUtil/CleanWindows.h>
- #endif
+#endif
 
 #include "RenderModule.h"
 #include <utVision/Image.h>

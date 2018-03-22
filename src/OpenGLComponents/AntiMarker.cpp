@@ -23,6 +23,13 @@
 
 #include "AntiMarker.h"
 
+// should be replaced ..
+#ifdef __APPLE__
+	#include <OpenGL/glu.h>
+#else
+	#include <GL/glu.h>
+#endif
+
 namespace Ubitrack { namespace Drivers {
 
 AntiMarker::AntiMarker( const std::string& name, boost::shared_ptr< Graph::UTQLSubgraph > subgraph, 
