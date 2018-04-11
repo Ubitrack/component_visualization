@@ -26,6 +26,7 @@ IF (WIN32)
 	${Freeglut_ROOT_PATH}/include 	
 	${FREEGLUT_ROOT_DIR}/include
 	)
+  message(STATUS "DEBUG [ FREEGLUT_ROOT_DIR: ${FREEGLUT_ROOT_DIR} ]")
   FIND_LIBRARY( Freeglut_glut_LIBRARY NAMES glut glut32 freeglut freeglut_static
     PATHS
     ${OPENGL_LIBRARY_DIR}
