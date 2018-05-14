@@ -21,7 +21,6 @@ class UbitrackCoreConan(ConanFile):
         "ubitrack_dataflow/%s@ubitrack/stable" % version,
         "ubitrack_visualization/%s@ubitrack/stable" % version,
         "ubitrack_component_core/%s@ubitrack/stable" % version,
-        "glad/0.1.16a0@bincrafters/stable",
        )
 
     default_options = (

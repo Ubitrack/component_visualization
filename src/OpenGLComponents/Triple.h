@@ -1,7 +1,7 @@
 #ifndef TRIPLE_H
 #define TRIPLE_H
 
-#include <utVisualization/OpenGLWrapper.h>
+#include <utVision/OpenGLPlatform.h>
 
 #include <iostream>
 #include <math.h>

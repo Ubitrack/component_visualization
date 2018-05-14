@@ -27,7 +27,7 @@
 
 #include "TrackedObject.h"
 
-#include <utVisualization/OpenGLWrapper.h>
+#include <utVision/OpenGLPlatform.h>
 
 /* assimp include files. These three are usually needed. */
 #include <assimp/cimport.h>

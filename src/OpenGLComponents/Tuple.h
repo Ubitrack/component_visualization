@@ -1,7 +1,7 @@
 #ifndef TUPLE_H
 #define TUPLE_H
 
-#include <utVisualization/OpenGLWrapper.h>
+#include <utVision/OpenGLPlatform.h>
 
 #include <iostream>
 

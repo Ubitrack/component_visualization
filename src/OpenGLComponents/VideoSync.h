@@ -29,7 +29,7 @@
  * @author Florian Echtler <echtler@in.tum.de>
  */
 
-#include <utVisualization/OpenGLWrapper.h>
+#include <utVision/OpenGLPlatform.h>
 
 class VideoSync {
 

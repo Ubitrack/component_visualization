@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 
-#include <utVisualization/OpenGLWrapper.h>
+#include <utVision/OpenGLPlatform.h>
 
 #include "Tuple.h"
 #include "Triple.h"
