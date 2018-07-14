@@ -13,6 +13,9 @@ target_link_libraries(${UBITRACK_LIBRARY_NAME}
     CONAN_PKG::ubitrack_dataflow
     CONAN_PKG::ubitrack_visualization
     CONAN_PKG::assimp
+    OpenGL::GL
+    OpenGL::GLU
+    OpenCL::OpenCL
     )
 
 # do not create symlinks to versioned names of component libraries
