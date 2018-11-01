@@ -91,9 +91,10 @@ int VideoSync::getFrame() { return frame; }
 		mode = fps;
 		frame = 0;
 
+#ifdef HAVE_GLEW
 		glXGetVideoSyncSGI  = (pglXGetVideoSyncSGI)  glXGetProcAddress( (const GLubyte*)"glXGetVideoSyncSGI"  );
 		glXWaitVideoSyncSGI = (pglXWaitVideoSyncSGI) glXGetProcAddress( (const GLubyte*)"glXWaitVideoSyncSGI" );
-
+#endif
 		/*if (mode) {
 			int usec = 1000000 / fps;
 			struct itimerval delay = { { 0, usec }, { 0, usec } };
