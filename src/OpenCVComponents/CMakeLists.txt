@@ -14,6 +14,9 @@ foreach(fpath ${UBITRACK_SRCS})
   		CONAN_PKG::ubitrack_vision
   		CONAN_PKG::ubitrack_dataflow
   		CONAN_PKG::ubitrack_visualization
+		OpenGL::GL
+		OpenGL::GLU
+		OpenCL::OpenCL
   		)
 
 	get_target_property(coreIncDirs CONAN_PKG::ubitrack_component_core INTERFACE_INCLUDE_DIRECTORIES)
