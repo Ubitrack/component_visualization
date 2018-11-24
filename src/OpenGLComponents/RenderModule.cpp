@@ -21,6 +21,8 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+#include <utVision/OpenGLPlatform.h>
+
 #include <utVision/OpenCLManager.h>
 
 #include "RenderModule.h"
@@ -70,21 +72,6 @@ log4cpp::Category& loggerEvents( log4cpp::Category::getInstance( "Ubitrack.Event
 #include <boost/thread.hpp>
 #include <iomanip>
 #include <math.h>
-
-
-
-#ifdef _WIN32
-#include <GL/gl.h>
-    #include <GL/glu.h>
-    #include <utUtil/CleanWindows.h>
-#elif __APPLE__
-#include <OpenGL/OpenGL.h>
-#include <OpenGL/glu.h>
-#else
-#include <GL/gl.h>
-    #include <GL/glu.h>
-    #include <GL/glx.h>
-#endif
 
 
 //OCL
