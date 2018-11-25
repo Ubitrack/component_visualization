@@ -13,10 +13,6 @@ class UbitrackCoreConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake"
 
-    options = {
-        "opengl_extension_wrapper": "ANY",
-        }
-
     requires = (
         "assimp/[>=4.1.0]@camposs/stable",
 
@@ -32,14 +28,10 @@ class UbitrackCoreConan(ConanFile):
         "ubitrack_vision:shared=True",
         "ubitrack_dataflow:shared=True",
         "assimp:shared=True",
-        "opengl_extension_wrapper=glad",
         )
 
     # all sources are deployed with the package
     exports_sources = "doc/*", "src/*", "CMakeLists.txt"
-
-    def configure(self):
-        self.options.opengl_extension_wrapper = self.options['ubitrack_vision'].opengl_extension_wrapper
 
     def imports(self):
         self.copy(pattern="*.dll", dst="bin", src="bin") # From bin to bin
@@ -57,3 +49,8 @@ class UbitrackCoreConan(ConanFile):
 
     def package_info(self):
         pass
+
+
+    def package_id(self):
+        self.requires["ubitrack_vision"].full_package_mode()
+        self.requires["ubitrack_visualization"].full_package_mode()
