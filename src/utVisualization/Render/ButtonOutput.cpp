@@ -41,7 +41,10 @@ void ButtonOutput::draw( Measurement::Timestamp& t, int parity )
 
     LOG4CPP_DEBUG( logger, "Button '" << key << "' pressed, push event with ID " << (int)key << " (" << Math::Scalar<int>( (int)key ) << ")" );
 	
-	Measurement::Button tmp( t, (int)key );
+	//TODO: Bug when using image reader to feed the background video, timestamp of the images stays the same
+	Measurement::Timestamp ts = Measurement::now();
+
+	Measurement::Button tmp(ts, (int)key);
 	m_port.send( tmp );
 	m_posPort.send( Measurement::Position2D( t, m_pModule->getLastMousePos() ) );
 }

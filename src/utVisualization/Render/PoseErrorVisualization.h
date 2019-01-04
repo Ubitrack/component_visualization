@@ -74,6 +74,8 @@ protected:
 	ErrorEllipsoid m_rotXEllipsoid;
 	ErrorEllipsoid m_rotYEllipsoid;
 	ErrorEllipsoid m_rotZEllipsoid;
+	float m_posColor[3];
+	Measurement::Timestamp m_lastPose;
 };
 
 
