@@ -81,9 +81,25 @@ PoseErrorVisualization::PoseErrorVisualization( const std::string& name, boost::
 {
 	double scaling = 3.0;
 	double axisLength = 0.1;
-	
+	std::string rgbString;
 	subgraph->m_DataflowAttributes.getAttributeData( "scaling", scaling );
 	subgraph->m_DataflowAttributes.getAttributeData( "axisLength", axisLength );
+	subgraph->m_DataflowAttributes.getAttributeData("RGB", rgbString);
+
+	if (subgraph->m_DataflowAttributes.hasAttribute("PositionRGB"))
+		rgbString = subgraph->m_DataflowAttributes.getAttributeString("PositionRGB");
+	else
+		rgbString = "0.8 0.8 0.0";
+
+	{
+		std::istringstream inStream(rgbString);
+		
+		inStream >> m_posColor[0];
+		inStream >> m_posColor[1];
+		inStream >> m_posColor[2];
+			
+	}
+
 
 	m_posEllipsoid.setScaling( scaling );
 	m_rotXEllipsoid.setScaling( scaling );
@@ -99,6 +115,8 @@ PoseErrorVisualization::PoseErrorVisualization( const std::string& name, boost::
 void PoseErrorVisualization::draw3DContent( Measurement::Timestamp& t, int )
 {
 	LOG4CPP_DEBUG( logger, "Drawing ellipsoids" );
+	//if (t - m_lastPose > 50*1000*1000*1000*1000)
+	//	return;
 
 	// save old state
 	GLboolean oldCullMode;
@@ -111,11 +129,11 @@ void PoseErrorVisualization::draw3DContent( Measurement::Timestamp& t, int )
 
 	// set new state
 	glEnable( GL_CULL_FACE );
-	glLineWidth( 1 );
+	glLineWidth( 4 );
 	glEnable( GL_LINE_SMOOTH );
 
 	// position error
-	glColor3f( 0.8f, 0.8f, 0.0f );
+	glColor3f(m_posColor[0], m_posColor[1], m_posColor[2]);
 	m_posEllipsoid.draw();
 
 	// x-axis rotation error
@@ -159,6 +177,8 @@ void PoseErrorVisualization::receiveError( const Ubitrack::Measurement::ErrorPos
 {
 	LOG4CPP_DEBUG( logger, "Received error pose" );
 	LOG4CPP_TRACE( logger, *error );
+
+	m_lastPose = error.time();
 
 	boost::mutex::scoped_lock l( m_poseLock );
 
