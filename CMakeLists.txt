@@ -34,4 +34,4 @@ add_subdirectory(src/OpenGLComponents)
 
 ubitrack_install_utql("doc/utql/*.xml" "doc/utql/*/*.xml"  "doc/utql/*/*/*.xml")
 ubitrack_install_doc("doc/utqlDoc/*" "doc/utqlDoc/*/*" "doc/utqlDoc/*/*/*")
-ubitrack_install_doc("doc/misc/*")
+ubitrack_install_doc("doc/misc/*" "doc/misc/*/*" "doc/misc/*/*/*" "doc/misc/*/*/*/*")

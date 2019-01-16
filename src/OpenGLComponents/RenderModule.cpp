@@ -48,6 +48,7 @@ log4cpp::Category& loggerEvents( log4cpp::Category::getInstance( "Ubitrack.Event
 
 //#include "Transparency.h"
 #include "CustomGeometry.h"
+#include "CoordSystem.h"
 #include "VectorfieldViewer.h"
 #include "AntiMarker.h"
 #include "PointCloud.h"
@@ -481,6 +482,8 @@ boost::shared_ptr< VirtualObject > VirtualCamera::createComponent( const std::st
 	//	return boost::shared_ptr< VirtualObject >( new Transparency( name, pConfig, key, pModule ) );
 	if ( type == "CustomGeometry" )
 		return boost::shared_ptr< VirtualObject >( new CustomGeometry( name, pConfig, key, pModule ) );
+	else if ( type == "CoordSystem" )
+		return boost::shared_ptr< VirtualObject >( new CoordSystemVisualization( name, pConfig, key, pModule ) );
 	else if ( type == "VectorfieldViewer" )
 		return boost::shared_ptr< VirtualObject >( new VectorfieldViewer( name, pConfig, key, pModule ) );
 	else if ( type == "AntiMarker" )
@@ -528,11 +531,6 @@ boost::shared_ptr< VirtualObject > VirtualCamera::createComponent( const std::st
 		return boost::shared_ptr< VirtualObject >( new PositionErrorVisualization( name, pConfig, key, pModule ) );
 	#endif
 
-    #ifdef HAVE_COIN
-	else if ( type == "InventorObject" )
-		return boost::shared_ptr< VirtualObject >( new InventorObject( name, pConfig, key, pModule ) );
-	#endif
-
 	UBITRACK_THROW( "Class " + type + " not supported by render module" );
 
     LOG4CPP_DEBUG( logger, "createComponent(): done");
@@ -545,6 +543,7 @@ UBITRACK_REGISTER_COMPONENT( ComponentFactory* const cf )
 	std::vector< std::string > renderComponents;
 	//renderComponents.push_back( "Transparency" );
 	renderComponents.push_back( "CustomGeometry" );
+	renderComponents.push_back( "CoordSystem" );
 	renderComponents.push_back( "VectorfieldViewer" );
 	renderComponents.push_back( "AntiMarker" );
 	renderComponents.push_back( "PointCloud" );
@@ -569,9 +568,6 @@ UBITRACK_REGISTER_COMPONENT( ComponentFactory* const cf )
 	#ifdef HAVE_LAPACK
 		renderComponents.push_back( "PoseErrorVisualization" );
 		renderComponents.push_back( "PositionErrorVisualization" );
-	#endif
-	#ifdef HAVE_COIN
-		renderComponents.push_back( "InventorObject" );
 	#endif
 	cf->registerModule< VirtualCamera > ( renderComponents );
 }
