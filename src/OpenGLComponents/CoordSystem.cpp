@@ -104,14 +104,14 @@ void CoordSystemVisualization::draw3DContent( Measurement::Timestamp& t, int )
 	glEnd();
 
 	// y-axis rotation error
-	glColor3f( 0.0f, 0.8f, 0.0f );
+	glColor3f( 0.0f, 1.0f, 0.0f );
 	glBegin( GL_LINES );
 		glVertex3d( 0, 0, 0 );
 		glVertex3d( m_axis_y( 0 ), m_axis_y( 1 ), m_axis_y( 2 ) );
 	glEnd();
 
 	// z-axis rotation error
-	glColor3f( 0.0f, 0.0f, 0.8f );
+	glColor3f( 0.0f, 0.0f, 1.0f );
 	glBegin( GL_LINES );
 		glVertex3d( 0, 0, 0 );
 		glVertex3d( m_axis_z( 0 ), m_axis_z( 1 ), m_axis_z( 2 ) );
