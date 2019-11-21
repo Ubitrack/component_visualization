@@ -7,7 +7,7 @@ FILE(GLOB UBITRACK_SRCS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
 
 add_library(${UBITRACK_LIBRARY_NAME} SHARED ${UBITRACK_SRCS})
 
-target_link_libraries(${UBITRACK_LIBRARY_NAME} 
+target_link_libraries(${UBITRACK_LIBRARY_NAME} PUBLIC
     CONAN_PKG::ubitrack_core
     CONAN_PKG::ubitrack_vision
     CONAN_PKG::ubitrack_dataflow
