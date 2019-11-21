@@ -15,8 +15,14 @@ target_link_libraries(${UBITRACK_LIBRARY_NAME}
     CONAN_PKG::assimp
     OpenGL::GL
     OpenGL::GLU
+    )
+
+if(WITH_OPENCL)
+  target_link_libraries(${UBITRACK_LIBRARY_NAME} PUBLIC
     OpenCL::OpenCL
     )
+endif()
+
 
 # do not create symlinks to versioned names of component libraries
 set_target_properties(${UBITRACK_LIBRARY_NAME} PROPERTIES NO_SONAME ON)
