@@ -803,6 +803,34 @@
             </Attribute>
         </DataflowConfiguration>
     </Pattern>
+
+    <Pattern name="CoordSystemList" displayName="Renderer: Coordinate Frame List">
+        <Description>
+            <h:p>This component displays a coordinate frame for the given pose.</h:p>
+        </Description>
+
+        <Input>
+            <Node name="Camera" displayName="Camera"/>
+            <Node name="Object" displayName="Object"/>
+            <Edge name="PushInput" displayName="Pose input" source="Camera" destination="Object">
+                <Predicate>type=='PoseList'&amp;&amp;mode=='push'</Predicate>
+            </Edge>
+        </Input>
+
+        <DataflowConfiguration>
+            <UbitrackLib class="CoordSystemList"/>
+            <Attribute name="axisLength" displayName="Axis Length" default="0.1" xsi:type="DoubleAttributeDeclarationType">
+                <Description>
+                    <h:p>Lengths of the axis.</h:p>
+                </Description>
+            </Attribute>
+            <Attribute name="PositionRGB" displayName="Color Position" default="0.8 0.8 0.0" xsi:type="StringAttributeDeclarationType">
+                <Description>
+                    <h:p>Color as RGB float values 0.0 - 1.0</h:p>
+                </Description>
+            </Attribute>
+        </DataflowConfiguration>
+    </Pattern>
     
     <Pattern name="PoseErrorVisualization" displayName="Renderer: Visualization of Pose Errors">
         <Description>

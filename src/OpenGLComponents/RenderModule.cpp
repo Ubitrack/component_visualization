@@ -49,6 +49,7 @@ log4cpp::Category& loggerEvents( log4cpp::Category::getInstance( "Ubitrack.Event
 //#include "Transparency.h"
 #include "CustomGeometry.h"
 #include "CoordSystem.h"
+#include "CoordSystemList.h"
 #include "VectorfieldViewer.h"
 #include "AntiMarker.h"
 #include "PointCloud.h"
@@ -484,6 +485,8 @@ boost::shared_ptr< VirtualObject > VirtualCamera::createComponent( const std::st
 		return boost::shared_ptr< VirtualObject >( new CustomGeometry( name, pConfig, key, pModule ) );
 	else if ( type == "CoordSystem" )
 		return boost::shared_ptr< VirtualObject >( new CoordSystemVisualization( name, pConfig, key, pModule ) );
+    else if ( type == "CoordSystemList" )
+        return boost::shared_ptr< VirtualObject >( new CoordSystemListVisualization( name, pConfig, key, pModule ) );
 	else if ( type == "VectorfieldViewer" )
 		return boost::shared_ptr< VirtualObject >( new VectorfieldViewer( name, pConfig, key, pModule ) );
 	else if ( type == "AntiMarker" )
@@ -544,6 +547,7 @@ UBITRACK_REGISTER_COMPONENT( ComponentFactory* const cf )
 	//renderComponents.push_back( "Transparency" );
 	renderComponents.push_back( "CustomGeometry" );
 	renderComponents.push_back( "CoordSystem" );
+	renderComponents.push_back( "CoordSystemList" );
 	renderComponents.push_back( "VectorfieldViewer" );
 	renderComponents.push_back( "AntiMarker" );
 	renderComponents.push_back( "PointCloud" );
