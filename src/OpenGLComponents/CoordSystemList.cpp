@@ -64,6 +64,9 @@ namespace Ubitrack { namespace Drivers {
             boost::mutex::scoped_lock l( m_lock );
             glMatrixMode( GL_MODELVIEW );
 
+            if(m_data.invalid())
+                return;
+
             for(Ubitrack::Math::Pose pose : *m_data) {
                 glPushMatrix();
 
