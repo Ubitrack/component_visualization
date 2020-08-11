@@ -29,6 +29,14 @@
  * @author Florian Echtler <echtler@in.tum.de>
  */
 
+
+// This opencv include is needed as a workaround to avoid "Status" macro/enum issue in glew.h and stirching.hpp on linux systems
+#ifndef _WIN32
+	#include <opencv/cxcore.h>
+	#include <opencv2/opencv.hpp>
+#endif
+//
+
 #include "GL/freeglut.h"
 
 #ifdef _WIN32
